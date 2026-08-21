@@ -1,0 +1,112 @@
+.home-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  background: url('https://www.transparenttextures.com/patterns/stardust.png'), linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #0f172a 100%);
+  animation: bg-pan-left 20s both infinite;
+}
+
+@keyframes bg-pan-left {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 800px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.title {
+  font-size: 4rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(to right, #00c6ff, #0072ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.3));
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #94a3b8;
+  margin: 0;
+  margin-top: -1.5rem;
+}
+
+.menu-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  text-decoration: none;
+  width: 200px;
+  min-height: 150px;
+}
+
+.menu-card h2 {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+  color: #fff;
+}
+
+.menu-card p {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.menu-card:hover {
+  transform: translateY(-10px) scale(1.05);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+}
+
+.dance-card:hover { border-color: #ec4899; box-shadow: 0 20px 40px -10px rgba(236, 72, 153, 0.3); }
+.dance-card h2 { color: #fbcfe8; }
+
+.shooter-card:hover { border-color: #3b82f6; box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.3); }
+.shooter-card h2 { color: #bfdbfe; }
+
+.test-card:hover { border-color: #10b981; box-shadow: 0 20px 40px -10px rgba(16, 185, 129, 0.3); }
+.test-card h2 { color: #a7f3d0; }
+
+.sort-card:hover { border-color: #eab308; box-shadow: 0 20px 40px -10px rgba(234, 179, 8, 0.3); }
+.sort-card h2 { color: #fef08a; }
+
+.ninja-card:hover { border-color: #ef4444; box-shadow: 0 20px 40px -10px rgba(239, 68, 68, 0.3); }
+.ninja-card h2 { color: #fca5a5; }
+
+.saber-card:hover { border-color: #00f3ff; box-shadow: 0 20px 40px -10px rgba(0, 243, 255, 0.4); }
+.saber-card h2 { color: #a5f3fc; }
+
+.runner-card:hover { border-color: #eab308; box-shadow: 0 20px 40px -10px rgba(234, 179, 8, 0.4); }
+.runner-card h2 { color: #fef08a; }
