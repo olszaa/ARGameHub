@@ -10,7 +10,8 @@ const MENU_ITEMS = [
   { path: '/color-sort', title: 'Color Sort Game', desc: 'Grab & Sort Items by Color! (Hand Tracking)', class: 'sort-card', icon: '🧺' },
   { path: '/fruit-ninja', title: 'Fruit Ninja AR', desc: 'Slash fruits with laser hand blades! Avoid bombs!', class: 'ninja-card', icon: '⚔️' },
   { path: '/lightsaber', title: 'Beat Saber AR', desc: 'Dual Lightsabers & Directional Beat Blocks!', class: 'saber-card', icon: '🤺' },
-  { path: '/runner', title: 'Subway Runner AR', desc: 'Lean, Jump 🦘 & Duck 🏃‍♂️ down 3 tracks!', class: 'runner-card', icon: '🏃' }
+  { path: '/runner', title: 'Subway Runner AR', desc: 'Lean, Jump 🦘 & Duck 🏃‍♂️ down 3 tracks!', class: 'runner-card', icon: '🏃' },
+  { path: '/wall', title: 'Hole in the Wall', desc: 'Fit body posture into incoming wall cutouts!', class: 'wall-card', icon: '🧱' }
 ];
 
 const Home = () => {

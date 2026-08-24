@@ -7,6 +7,7 @@ import ColorSortGame from './pages/ColorSortGame';
 import FruitNinjaGame from './pages/FruitNinjaGame';
 import LightsaberGame from './pages/LightsaberGame';
 import RunnerGame from './pages/RunnerGame';
+import WallGame from './pages/WallGame';
 import './index.css';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route path="/fruit-ninja" element={<FruitNinjaGame />} />
         <Route path="/lightsaber" element={<LightsaberGame />} />
         <Route path="/runner" element={<RunnerGame />} />
+        <Route path="/wall" element={<WallGame />} />
       </Routes>
     </Router>
   );

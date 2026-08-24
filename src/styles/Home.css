@@ -110,3 +110,6 @@
 
 .runner-card:hover { border-color: #eab308; box-shadow: 0 20px 40px -10px rgba(234, 179, 8, 0.4); }
 .runner-card h2 { color: #fef08a; }
+
+.wall-card:hover { border-color: #10b981; box-shadow: 0 20px 40px -10px rgba(16, 185, 129, 0.4); }
+.wall-card h2 { color: #a7f3d0; }
