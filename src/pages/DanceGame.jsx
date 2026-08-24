@@ -13,14 +13,19 @@ const ARROWS = [
 ];
 
 const AVATAR_PRESETS = [
+  { id: 'chameleon', name: '🦎 Meccha Chameleon (White)', modelPath: '/models/meccha_chameleon_white_character.glb', armorColor: '#f8fafc', hairColor: '#00f3ff', accentColor: '#00f3ff', skinColor: '#e2e8f0' },
   { id: 'knight', name: '🛡️ Knight', modelPath: '/models/avatar_knight.glb', armorColor: '#475569', hairColor: '#ef4444', accentColor: '#00f3ff', skinColor: '#fca5a5' },
   { id: 'cyberpunk', name: '⚡ Cyberpunk', modelPath: '/models/avatar_cyberpunk.glb', armorColor: '#1e1b4b', hairColor: '#ec4899', accentColor: '#00f3ff', skinColor: '#fed7aa' },
   { id: 'robot', name: '🤖 Robot', modelPath: '/models/avatar_robot.glb', armorColor: '#334155', hairColor: '#eab308', accentColor: '#10b981', skinColor: '#94a3b8' },
   { id: 'chibi', name: '🐣 Chibi', modelPath: '/models/avatar_chibi.glb', armorColor: '#f43f5e', hairColor: '#fbbf24', accentColor: '#38bdf8', skinColor: '#ffedd5' }
 ];
 
-// Preload GLB models
-AVATAR_PRESETS.forEach(avatar => useGLTF.preload(avatar.modelPath));
+// Preload GLB models safely
+AVATAR_PRESETS.forEach(avatar => {
+  try {
+    useGLTF.preload(avatar.modelPath);
+  } catch(e) {}
+});
 
 // 3D Bone Helper
 const BlockBone = ({ p1, p2, color, width = 0.4, depth = 0.4 }) => {
@@ -44,13 +49,13 @@ const BlockBone = ({ p1, p2, color, width = 0.4, depth = 0.4 }) => {
 const GLTFModel = ({ modelPath }) => {
   try {
     const { scene } = useGLTF(modelPath);
-    return <primitive object={scene.clone()} scale={[1.1, 1.1, 1.1]} position={[0, -0.3, 0]} />;
+    return <primitive object={scene.clone()} scale={[1.2, 1.2, 1.2]} position={[0, -0.3, 0]} />;
   } catch (e) {
     return null;
   }
 };
 
-// Rigged 3D Avatar Component incorporating Loaded GLB File Model
+// Rigged 3D Avatar Component incorporating Meccha Chameleon White Character Model
 const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) => {
   if (!points || points.length < 29) return null;
 
@@ -80,7 +85,7 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) 
 
   return (
     <group>
-      {/* 3D GLB Avatar Head / Mesh Model */}
+      {/* Loaded Meccha Chameleon White Character 3D GLB Mesh */}
       <group position={headPos}>
         <Suspense fallback={null}>
           <GLTFModel modelPath={avatarPreset.modelPath} />
@@ -547,7 +552,7 @@ const DanceGame = () => {
             />
           ))}
 
-          {/* Player 1 3D Avatar (With Loaded 3D GLB Model) */}
+          {/* Player 1 3D Avatar (Meccha Chameleon White Character Model) */}
           {p1Landmarks && (
             <Rigged3DAvatar
               points={p1Landmarks}
@@ -575,8 +580,8 @@ const DanceGame = () => {
           <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
             &larr; Back to Menu
           </Link>
-          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D GLB Avatar Stage Dance AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Loaded 3D GLB Avatar Files (.glb) Dancing on 3D Stage! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>🦎 Meccha Chameleon Stage Dance AR</h1>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Meccha Chameleon White Character 3D Model! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -617,13 +622,13 @@ const DanceGame = () => {
           }}>
             {gameState === 'MENU' ? (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D GLB Avatar Stage AR</h2>
+                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>🦎 Meccha Chameleon Stage AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Select your 3D GLB Avatar Model to dance on the 3D Stage!
+                  Select Meccha Chameleon (White Character) 3D Model to dance on the 3D Stage!
                 </p>
 
                 {/* Avatar Selection Picker */}
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '2rem', flexWrap: 'wrap' }}>
                   {AVATAR_PRESETS.map((avatar) => (
                     <button
                       key={avatar.id}
