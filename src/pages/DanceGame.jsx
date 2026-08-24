@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { Canvas } from '@react-three/fiber';
-import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
+import { Box, Sphere, Cylinder, Text, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { Link } from 'react-router-dom';
 
@@ -13,11 +13,14 @@ const ARROWS = [
 ];
 
 const AVATAR_PRESETS = [
-  { id: 'knight', name: '🛡️ Knight', armorColor: '#475569', hairColor: '#ef4444', accentColor: '#00f3ff', skinColor: '#fca5a5' },
-  { id: 'cyberpunk', name: '⚡ Cyberpunk', armorColor: '#1e1b4b', hairColor: '#ec4899', accentColor: '#00f3ff', skinColor: '#fed7aa' },
-  { id: 'robot', name: '🤖 Robot', armorColor: '#334155', hairColor: '#eab308', accentColor: '#10b981', skinColor: '#94a3b8' },
-  { id: 'chibi', name: '🐣 Chibi', armorColor: '#f43f5e', hairColor: '#fbbf24', accentColor: '#38bdf8', skinColor: '#ffedd5' }
+  { id: 'knight', name: '🛡️ Knight', modelPath: '/models/avatar_knight.glb', armorColor: '#475569', hairColor: '#ef4444', accentColor: '#00f3ff', skinColor: '#fca5a5' },
+  { id: 'cyberpunk', name: '⚡ Cyberpunk', modelPath: '/models/avatar_cyberpunk.glb', armorColor: '#1e1b4b', hairColor: '#ec4899', accentColor: '#00f3ff', skinColor: '#fed7aa' },
+  { id: 'robot', name: '🤖 Robot', modelPath: '/models/avatar_robot.glb', armorColor: '#334155', hairColor: '#eab308', accentColor: '#10b981', skinColor: '#94a3b8' },
+  { id: 'chibi', name: '🐣 Chibi', modelPath: '/models/avatar_chibi.glb', armorColor: '#f43f5e', hairColor: '#fbbf24', accentColor: '#38bdf8', skinColor: '#ffedd5' }
 ];
+
+// Preload GLB models
+AVATAR_PRESETS.forEach(avatar => useGLTF.preload(avatar.modelPath));
 
 // 3D Bone Helper
 const BlockBone = ({ p1, p2, color, width = 0.4, depth = 0.4 }) => {
@@ -37,53 +40,17 @@ const BlockBone = ({ p1, p2, color, width = 0.4, depth = 0.4 }) => {
   );
 };
 
-// 3D Avatar Head Accessories
-const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) => {
-  if (preset === 'knight') {
-    return (
-      <group scale={[0.35, 0.35, 0.35]}>
-        <Box args={[1.8, 1.8, 1.8]}>
-          <meshStandardMaterial color={armorColor} metalness={0.8} roughness={0.2} />
-        </Box>
-        <Box args={[1.5, 0.35, 0.2]} position={[0, 0.1, 0.95]}>
-          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.5} />
-        </Box>
-      </group>
-    );
-  } else if (preset === 'cyberpunk') {
-    return (
-      <group scale={[0.35, 0.35, 0.35]}>
-        <Box args={[1.7, 1.7, 1.7]}>
-          <meshStandardMaterial color={armorColor} metalness={0.3} roughness={0.5} />
-        </Box>
-        <Box args={[1.8, 0.5, 0.3]} position={[0, 0.2, 0.8]}>
-          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.8} />
-        </Box>
-      </group>
-    );
-  } else if (preset === 'robot') {
-    return (
-      <group scale={[0.35, 0.35, 0.35]}>
-        <Box args={[1.9, 1.7, 1.7]}>
-          <meshStandardMaterial color={armorColor} metalness={0.9} roughness={0.1} />
-        </Box>
-        <Sphere args={[0.25, 12, 12]} position={[0, 1.4, 0]}>
-          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.5} />
-        </Sphere>
-      </group>
-    );
-  } else {
-    return (
-      <group scale={[0.35, 0.35, 0.35]}>
-        <Sphere args={[1.2, 16, 16]}>
-          <meshStandardMaterial color={skinColor} roughness={0.6} />
-        </Sphere>
-      </group>
-    );
+// Loaded 3D GLB Model Component
+const GLTFModel = ({ modelPath }) => {
+  try {
+    const { scene } = useGLTF(modelPath);
+    return <primitive object={scene.clone()} scale={[1.1, 1.1, 1.1]} position={[0, -0.3, 0]} />;
+  } catch (e) {
+    return null;
   }
 };
 
-// Rigged 3D Avatar Component
+// Rigged 3D Avatar Component incorporating Loaded GLB File Model
 const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) => {
   if (!points || points.length < 29) return null;
 
@@ -113,9 +80,13 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) 
 
   return (
     <group>
+      {/* 3D GLB Avatar Head / Mesh Model */}
       <group position={headPos}>
-        <HeadPreset preset={avatarPreset.id} {...avatarPreset} />
+        <Suspense fallback={null}>
+          <GLTFModel modelPath={avatarPreset.modelPath} />
+        </Suspense>
       </group>
+
       <BlockBone p1={shoulderMid} p2={headPos} color={avatarPreset.skinColor} width={0.18} depth={0.18} />
       <BlockBone p1={shoulderMid} p2={hipMid} color={avatarPreset.armorColor} width={0.7} depth={0.4} />
       
@@ -134,19 +105,41 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) 
   );
 };
 
+// 3D Concert Stage Light Pillar
+const StageLightPillar = ({ position, neonColor }) => {
+  return (
+    <group position={position}>
+      <Cylinder args={[0.12, 0.18, 6.5, 12]} position={[0, 1.0, 0]}>
+        <meshStandardMaterial color="#1e293b" metalness={0.9} roughness={0.1} />
+      </Cylinder>
+
+      {[-1.0, 0.2, 1.4, 2.6, 3.8].map((y, idx) => (
+        <Cylinder key={`ring_${idx}`} args={[0.2, 0.2, 0.12, 16]} position={[0, y, 0]}>
+          <meshStandardMaterial color={neonColor} emissive={neonColor} emissiveIntensity={3.5} />
+        </Cylinder>
+      ))}
+
+      <Sphere args={[0.4, 16, 16]} position={[0, 4.2, 0]}>
+        <meshStandardMaterial color={neonColor} emissive={neonColor} emissiveIntensity={4.5} />
+      </Sphere>
+
+      <Cylinder args={[0.4, 2.5, 7.0, 16]} position={[0, 0.7, 0]}>
+        <meshStandardMaterial color={neonColor} transparent opacity={0.12} />
+      </Cylinder>
+    </group>
+  );
+};
+
 // 3D Thick Extruded Flowing Floor Arrow Block
 const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
   return (
     <group position={[xOffset, -2.15, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
-      {/* 3D Thick Base Block (Extruded Height 0.35) */}
       <Box args={[0.85, 0.85, 0.35]}>
         <meshStandardMaterial color="#0f172a" roughness={0.2} metalness={0.7} />
       </Box>
-      {/* 3D Thick Emissive Glowing Bezel */}
       <Box args={[0.9, 0.9, 0.15]} position={[0, 0, 0.1]}>
         <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={3.5} />
       </Box>
-      {/* Arrow Text Symbol */}
       <Text position={[0, 0, 0.2]} fontSize={0.45} color="#ffffff" anchorX="center" anchorY="middle">
         {arrowData.arrow}
       </Text>
@@ -161,35 +154,28 @@ const RunwayStageFloor = ({ mode }) => {
 
   return (
     <group position={[0, -2.4, -2]}>
-      {/* 3D Thick Stage Floor Platform Base (Height = 0.5) */}
       <Box args={[14.5, 0.5, 14.5]} position={[0, -0.25, 0]}>
         <meshStandardMaterial color="#0b0f19" roughness={0.2} metalness={0.9} />
       </Box>
 
+      {/* Side Concert Light Pillars */}
+      <StageLightPillar position={[-6.8, -0.2, -5.0]} neonColor="#00f3ff" />
+      <StageLightPillar position={[-6.8, -0.2, 1.5]} neonColor="#ec4899" />
+      <StageLightPillar position={[6.8, -0.2, -5.0]} neonColor="#eab308" />
+      <StageLightPillar position={[6.8, -0.2, 1.5]} neonColor="#10b981" />
+
       {/* SINGLE PLAYER RUNWAY */}
       {mode === 'SINGLE' ? (
         <group>
-          {/* 4 Thick Translucent 3D Glass Lanes (Height = 0.15) */}
           {laneCenters.map((x, idx) => (
             <Box key={`glass_lane_${idx}`} args={[1.14, 0.15, 13.8]} position={[x, 0.08, 0]}>
-              <meshStandardMaterial
-                color="#0f172a"
-                transparent
-                opacity={0.55}
-                roughness={0.1}
-                metalness={0.8}
-              />
+              <meshStandardMaterial color="#0f172a" transparent opacity={0.55} roughness={0.1} metalness={0.8} />
             </Box>
           ))}
 
-          {/* 5 Raised 3D Glowing Cyan Neon Divider Beams (Height = 0.25) */}
           {lineOffsets.map((x, idx) => (
             <Box key={`line_divider_${idx}`} args={[0.1, 0.25, 13.8]} position={[x, 0.12, 0]}>
-              <meshStandardMaterial
-                color="#00f3ff"
-                emissive="#00f3ff"
-                emissiveIntensity={3.5}
-              />
+              <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
             </Box>
           ))}
         </group>
@@ -226,7 +212,7 @@ const RunwayStageFloor = ({ mode }) => {
         </group>
       )}
 
-      {/* 3D Raised Target Line Glow Bar (Height = 0.2) */}
+      {/* Target Line Bar */}
       <Box args={[14.2, 0.2, 0.2]} position={[0, 0.1, 2.8]}>
         <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={3.5} />
       </Box>
@@ -261,8 +247,8 @@ const DanceGame = () => {
   const animationRef = useRef(null);
 
   // Game Mode & State
-  const [mode, setMode] = useState('SINGLE'); // SINGLE or MULTI
-  const [gameState, setGameState] = useState('MENU'); // MENU, PLAYING, GAMEOVER
+  const [mode, setMode] = useState('SINGLE');
+  const [gameState, setGameState] = useState('MENU');
   const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_PRESETS[0]);
   const [scoreP1, setScoreP1] = useState(0);
   const [scoreP2, setScoreP2] = useState(0);
@@ -510,10 +496,10 @@ const DanceGame = () => {
           <pointLight position={[-8, 5, -2]} intensity={2.0} color="#ec4899" />
           <pointLight position={[8, 5, -2]} intensity={2.0} color="#eab308" />
 
-          {/* 3D Extruded Stage Platform with Raised Neon Divider Beams */}
+          {/* 3D Stage Platform with 4 Side Light Pillars */}
           <RunwayStageFloor mode={mode} />
 
-          {/* Player 1 3D Thick Step Box Slabs (Extruded Height 0.3) */}
+          {/* Player 1 3D Thick Step Box Slabs */}
           {ARROWS.map((arr) => {
             const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset * 0.7 : arr.xOffset;
             const isStepped = activeStepP1 === arr.id;
@@ -561,7 +547,7 @@ const DanceGame = () => {
             />
           ))}
 
-          {/* Player 1 3D Avatar Standing BEHIND the Step Boxes */}
+          {/* Player 1 3D Avatar (With Loaded 3D GLB Model) */}
           {p1Landmarks && (
             <Rigged3DAvatar
               points={p1Landmarks}
@@ -589,8 +575,8 @@ const DanceGame = () => {
           <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
             &larr; Back to Menu
           </Link>
-          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Glass Runway Dance AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Thick 3D Extruded Stage Platform & Raised 3D Beams! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D GLB Avatar Stage Dance AR</h1>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Loaded 3D GLB Avatar Files (.glb) Dancing on 3D Stage! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -631,9 +617,9 @@ const DanceGame = () => {
           }}>
             {gameState === 'MENU' ? (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Glass Runway Dance AR</h2>
+                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D GLB Avatar Stage AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Thick 3D Extruded Stage Platform & Raised 3D Neon Beams!
+                  Select your 3D GLB Avatar Model to dance on the 3D Stage!
                 </p>
 
                 {/* Avatar Selection Picker */}
