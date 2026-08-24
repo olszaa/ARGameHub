@@ -83,8 +83,8 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
   }
 };
 
-// Rigged 3D Avatar Component
-const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 0] }) => {
+// Rigged 3D Avatar Component (Positioned Standing Behind Target Step Boxes)
+const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) => {
   if (!points || points.length < 29) return null;
 
   const toV3 = (lm) => new THREE.Vector3(
@@ -134,7 +134,7 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 0] }) =>
   );
 };
 
-// 3D Flowing Floor Arrow Component (Inside semi-transparent lane)
+// 3D Flowing Floor Arrow Component
 const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
   return (
     <group position={[xOffset, -2.33, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -154,11 +154,9 @@ const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
   );
 };
 
-// 4-Lane Perspective Runway with 5 Side Line Dividers & Semi-Transparent Glass Floor
+// 4-Lane Perspective Runway with 5 Side Line Dividers & Translucent Glass Floor
 const RunwayStageFloor = ({ mode }) => {
-  // 5 Divider Line offsets: [-2.4, -1.2, 0.0, 1.2, 2.4]
   const lineOffsets = [-2.4, -1.2, 0.0, 1.2, 2.4];
-  // 4 Lane Center offsets: [-1.8, -0.6, 0.6, 1.8]
   const laneCenters = [-1.8, -0.6, 0.6, 1.8];
 
   return (
@@ -171,34 +169,24 @@ const RunwayStageFloor = ({ mode }) => {
       {/* SINGLE PLAYER RUNWAY */}
       {mode === 'SINGLE' ? (
         <group>
-          {/* 4 Semi-Transparent Glass Lanes (ตรงเลนมีความโปร่งแสง) */}
+          {/* 4 Translucent Glass Lanes */}
           {laneCenters.map((x, idx) => (
             <Box key={`glass_lane_${idx}`} args={[1.14, 0.04, 13.8]} position={[x, 0.02, 0]}>
-              <meshStandardMaterial
-                color="#0f172a"
-                transparent
-                opacity={0.45}
-                roughness={0.1}
-                metalness={0.8}
-              />
+              <meshStandardMaterial color="#0f172a" transparent opacity={0.45} roughness={0.1} metalness={0.8} />
             </Box>
           ))}
 
-          {/* 5 Vertical Glowing Cyan Side Divider Lines (เส้นอยู่ด้านข้าง 5 เส้น) */}
+          {/* 5 Vertical Glowing Cyan Side Divider Lines */}
           {lineOffsets.map((x, idx) => (
             <Box key={`line_divider_${idx}`} args={[0.08, 0.06, 13.8]} position={[x, 0.04, 0]}>
-              <meshStandardMaterial
-                color="#00f3ff"
-                emissive="#00f3ff"
-                emissiveIntensity={3.5}
-              />
+              <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
             </Box>
           ))}
         </group>
       ) : (
         /* 2-PLAYER BATTLE TWIN RUNWAYS */
         <group>
-          {/* Player 1 Left Stage Runway (Cyan Lines & Semi-Transparent Lanes) */}
+          {/* Player 1 Left Stage Runway */}
           <group position={[-2.5, 0, 0]}>
             {laneCenters.map((x, idx) => (
               <Box key={`glass_lane_p1_${idx}`} args={[1.14 * 0.7, 0.04, 13.8]} position={[x * 0.7, 0.02, 0]}>
@@ -212,7 +200,7 @@ const RunwayStageFloor = ({ mode }) => {
             ))}
           </group>
 
-          {/* Player 2 Right Stage Runway (Gold Lines & Semi-Transparent Lanes) */}
+          {/* Player 2 Right Stage Runway */}
           <group position={[2.5, 0, 0]}>
             {laneCenters.map((x, idx) => (
               <Box key={`glass_lane_p2_${idx}`} args={[1.14 * 0.7, 0.04, 13.8]} position={[x * 0.7, 0.02, 0]}>
@@ -228,8 +216,8 @@ const RunwayStageFloor = ({ mode }) => {
         </group>
       )}
 
-      {/* Front Target Line Glow Bar */}
-      <Box args={[14, 0.08, 0.15]} position={[0, 0.05, 3]}>
+      {/* Target Line Bar */}
+      <Box args={[14, 0.08, 0.15]} position={[0, 0.05, 2.8]}>
         <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={3.0} />
       </Box>
     </group>
@@ -270,6 +258,8 @@ const DanceGame = () => {
   const [scoreP2, setScoreP2] = useState(0);
   const [comboP1, setComboP1] = useState(0);
   const [comboP2, setComboP2] = useState(0);
+  const [activeStepP1, setActiveStepP1] = useState(null); // Active stepped pad ID for P1
+  const [activeStepP2, setActiveStepP2] = useState(null); // Active stepped pad ID for P2
   const [timeLeft, setTimeLeft] = useState(60);
   const [status, setStatus] = useState('Initializing Model...');
 
@@ -443,15 +433,19 @@ const DanceGame = () => {
         });
       }
 
+      let activeP1Pad = null;
+      let activeP2Pad = null;
+
       floor3DNotesRef.current.forEach((note, nIdx) => {
         note.z += note.speed;
 
+        // Check Foot Stepping Collision when 3D floor note reaches target box pads (z >= 0.5 && z <= 1.3)
         let isHit = false;
-        if (note.z >= 0.7 && note.z <= 1.4) {
+        if (note.z >= 0.5 && note.z <= 1.3) {
           const pFeet = playerFeet.find(pf => pf.player === note.player);
           if (pFeet) {
             pFeet.feet.forEach(foot => {
-              if (Math.abs(foot.x - note.xOffset) < 0.8) {
+              if (Math.abs(foot.x - note.xOffset) < 0.75) {
                 isHit = true;
               }
             });
@@ -465,16 +459,21 @@ const DanceGame = () => {
             comboP1Ref.current += 1;
             setScoreP1(scoreP1Ref.current);
             setComboP1(comboP1Ref.current);
+            activeP1Pad = note.arrow.id;
           } else {
             scoreP2Ref.current += 100;
             comboP2Ref.current += 1;
             setScoreP2(scoreP2Ref.current);
             setComboP2(comboP2Ref.current);
+            activeP2Pad = note.arrow.id;
           }
 
           floor3DNotesRef.current.splice(nIdx, 1);
         }
       });
+
+      if (activeP1Pad) setActiveStepP1(activeP1Pad);
+      if (activeP2Pad) setActiveStepP2(activeP2Pad);
 
       floor3DNotesRef.current = floor3DNotesRef.current.filter(n => n.z < 2.0);
       setFloor3DNotes([...floor3DNotesRef.current]);
@@ -505,16 +504,17 @@ const DanceGame = () => {
           {/* Runway Floor with 5 Side Line Dividers & Translucent Glass Lanes */}
           <RunwayStageFloor mode={mode} />
 
-          {/* Player 1 3D Target Step Pads */}
+          {/* Player 1 3D Target Step Pads (In front of Avatar at z = 0.8) */}
           {ARROWS.map((arr) => {
             const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset * 0.7 : arr.xOffset;
+            const isStepped = activeStepP1 === arr.id;
             return (
-              <group key={`pad_p1_${arr.id}`} position={[xPos, -2.33, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <group key={`pad_p1_${arr.id}`} position={[xPos, -2.33, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
                 <Box args={[0.8, 0.8, 0.05]}>
-                  <meshStandardMaterial color="#0f172a" roughness={0.2} />
+                  <meshStandardMaterial color={isStepped ? arr.color : "#0f172a"} roughness={0.2} />
                 </Box>
                 <Box args={[0.88, 0.88, 0.03]}>
-                  <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={3.0} />
+                  <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={isStepped ? 5.0 : 3.0} />
                 </Box>
                 <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff">
                   {arr.arrow}
@@ -523,16 +523,17 @@ const DanceGame = () => {
             );
           })}
 
-          {/* Player 2 3D Target Step Pads */}
+          {/* Player 2 3D Target Step Pads (Multiplayer) */}
           {mode === 'MULTI' && ARROWS.map((arr) => {
             const xPos = 2.5 + arr.xOffset * 0.7;
+            const isStepped = activeStepP2 === arr.id;
             return (
-              <group key={`pad_p2_${arr.id}`} position={[xPos, -2.33, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <group key={`pad_p2_${arr.id}`} position={[xPos, -2.33, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
                 <Box args={[0.8, 0.8, 0.05]}>
-                  <meshStandardMaterial color="#0f172a" roughness={0.2} />
+                  <meshStandardMaterial color={isStepped ? arr.color : "#0f172a"} roughness={0.2} />
                 </Box>
                 <Box args={[0.88, 0.88, 0.03]}>
-                  <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={3.0} />
+                  <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={isStepped ? 5.0 : 3.0} />
                 </Box>
                 <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff">
                   {arr.arrow}
@@ -551,21 +552,21 @@ const DanceGame = () => {
             />
           ))}
 
-          {/* Player 1 3D Avatar */}
+          {/* Player 1 3D Avatar Standing BEHIND the Target Pads at z = 2.0 */}
           {p1Landmarks && (
             <Rigged3DAvatar
               points={p1Landmarks}
               avatarPreset={selectedAvatar}
-              positionOffset={mode === 'MULTI' ? [-2.5, 0, 1.0] : [0, 0, 1.0]}
+              positionOffset={mode === 'MULTI' ? [-2.5, 0, 2.0] : [0, 0, 2.0]}
             />
           )}
 
-          {/* Player 2 3D Avatar */}
+          {/* Player 2 3D Avatar Standing BEHIND the Target Pads at z = 2.0 */}
           {p2Landmarks && mode === 'MULTI' && (
             <Rigged3DAvatar
               points={p2Landmarks}
               avatarPreset={AVATAR_PRESETS[1]}
-              positionOffset={[2.5, 0, 1.0]}
+              positionOffset={[2.5, 0, 2.0]}
             />
           )}
 
@@ -580,7 +581,7 @@ const DanceGame = () => {
             &larr; Back to Menu
           </Link>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Glass Runway Dance AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>4 Translucent Glass Lanes & 5 Neon Divider Lines! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Avatar stands behind step boxes! | Step feet 🦶 on floor arrows! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -623,7 +624,7 @@ const DanceGame = () => {
               <>
                 <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Glass Runway Dance AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  4 Translucent Glass Lanes with 5 Glowing Neon Side Divider Lines!
+                  Your 3D Avatar stands behind step boxes. Step your feet 🦶 onto floor arrows in sync with rhythm!
                 </p>
 
                 {/* Avatar Selection Picker */}
