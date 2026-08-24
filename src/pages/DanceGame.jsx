@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import { Canvas } from '@react-three/fiber';
-import { Box, Sphere, Cylinder, OrbitControls } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Link } from 'react-router-dom';
 
 const ARROWS = [
-  { id: 'left', name: 'Left', arrow: '⬅️', color: '#ec4899' },
-  { id: 'up', name: 'Up', arrow: '⬆️', color: '#00f3ff' },
-  { id: 'down', name: 'Down', arrow: '⬇️', color: '#eab308' },
-  { id: 'right', name: 'Right', arrow: '➡️', color: '#10b981' }
+  { id: 'left', name: 'Left', arrow: '⬅️', color: '#ec4899', xOffset: -1.8 },
+  { id: 'up', name: 'Up', arrow: '⬆️', color: '#00f3ff', xOffset: -0.6 },
+  { id: 'down', name: 'Down', arrow: '⬇️', color: '#eab308', xOffset: 0.6 },
+  { id: 'right', name: 'Right', arrow: '➡️', color: '#10b981', xOffset: 1.8 }
 ];
 
 const AVATAR_PRESETS = [
@@ -19,7 +19,7 @@ const AVATAR_PRESETS = [
   { id: 'chibi', name: '🐣 Chibi', armorColor: '#f43f5e', hairColor: '#fbbf24', accentColor: '#38bdf8', skinColor: '#ffedd5' }
 ];
 
-// Helper to draw 3D bones between joints
+// 3D Bone Helper
 const BlockBone = ({ p1, p2, color, width = 0.4, depth = 0.4 }) => {
   if (!p1 || !p2) return null;
   const distance = p1.distanceTo(p2);
@@ -41,7 +41,7 @@ const BlockBone = ({ p1, p2, color, width = 0.4, depth = 0.4 }) => {
 const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) => {
   if (preset === 'knight') {
     return (
-      <group scale={[0.4, 0.4, 0.4]}>
+      <group scale={[0.35, 0.35, 0.35]}>
         <Box args={[1.8, 1.8, 1.8]}>
           <meshStandardMaterial color={armorColor} metalness={0.8} roughness={0.2} />
         </Box>
@@ -52,7 +52,7 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
     );
   } else if (preset === 'cyberpunk') {
     return (
-      <group scale={[0.4, 0.4, 0.4]}>
+      <group scale={[0.35, 0.35, 0.35]}>
         <Box args={[1.7, 1.7, 1.7]}>
           <meshStandardMaterial color={armorColor} metalness={0.3} roughness={0.5} />
         </Box>
@@ -63,7 +63,7 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
     );
   } else if (preset === 'robot') {
     return (
-      <group scale={[0.4, 0.4, 0.4]}>
+      <group scale={[0.35, 0.35, 0.35]}>
         <Box args={[1.9, 1.7, 1.7]}>
           <meshStandardMaterial color={armorColor} metalness={0.9} roughness={0.1} />
         </Box>
@@ -74,29 +74,23 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
     );
   } else {
     return (
-      <group scale={[0.4, 0.4, 0.4]}>
+      <group scale={[0.35, 0.35, 0.35]}>
         <Sphere args={[1.2, 16, 16]}>
           <meshStandardMaterial color={skinColor} roughness={0.6} />
-        </Sphere>
-        <Sphere args={[0.2, 12, 12]} position={[-0.4, 0.1, 1.05]}>
-          <meshStandardMaterial color={accentColor} />
-        </Sphere>
-        <Sphere args={[0.2, 12, 12]} position={[0.4, 0.1, 1.05]}>
-          <meshStandardMaterial color={accentColor} />
         </Sphere>
       </group>
     );
   }
 };
 
-// Rigged 3D Avatar Component
+// Rigged 3D Avatar
 const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 0] }) => {
   if (!points || points.length < 29) return null;
 
   const toV3 = (lm) => new THREE.Vector3(
-    (0.5 - lm.x) * 6 + positionOffset[0],
-    (0.5 - lm.y) * 6 + positionOffset[1],
-    -lm.z * 4 + positionOffset[2]
+    (0.5 - lm.x) * 5.5 + positionOffset[0],
+    (0.5 - lm.y) * 5.5 + positionOffset[1],
+    -lm.z * 3 + positionOffset[2]
   );
 
   const nose = toV3(points[0]);
@@ -122,20 +116,36 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 0] }) =>
       <group position={headPos}>
         <HeadPreset preset={avatarPreset.id} {...avatarPreset} />
       </group>
-      <BlockBone p1={shoulderMid} p2={headPos} color={avatarPreset.skinColor} width={0.2} depth={0.2} />
-      <BlockBone p1={shoulderMid} p2={hipMid} color={avatarPreset.armorColor} width={0.8} depth={0.5} />
+      <BlockBone p1={shoulderMid} p2={headPos} color={avatarPreset.skinColor} width={0.18} depth={0.18} />
+      <BlockBone p1={shoulderMid} p2={hipMid} color={avatarPreset.armorColor} width={0.7} depth={0.4} />
       
       {/* Arms */}
-      <BlockBone p1={lShoulder} p2={lElbow} color={avatarPreset.armorColor} width={0.3} depth={0.3} />
-      <BlockBone p1={lElbow} p2={lWrist} color={avatarPreset.skinColor} width={0.25} depth={0.25} />
-      <BlockBone p1={rShoulder} p2={rElbow} color={avatarPreset.armorColor} width={0.3} depth={0.3} />
-      <BlockBone p1={rElbow} p2={rWrist} color={avatarPreset.skinColor} width={0.25} depth={0.25} />
+      <BlockBone p1={lShoulder} p2={lElbow} color={avatarPreset.armorColor} width={0.25} depth={0.25} />
+      <BlockBone p1={lElbow} p2={lWrist} color={avatarPreset.skinColor} width={0.2} depth={0.2} />
+      <BlockBone p1={rShoulder} p2={rElbow} color={avatarPreset.armorColor} width={0.25} depth={0.25} />
+      <BlockBone p1={rElbow} p2={rWrist} color={avatarPreset.skinColor} width={0.2} depth={0.2} />
 
       {/* Legs */}
-      <BlockBone p1={lHip} p2={lKnee} color={avatarPreset.armorColor} width={0.35} depth={0.35} />
-      <BlockBone p1={lKnee} p2={lAnkle} color={avatarPreset.skinColor} width={0.3} depth={0.3} />
-      <BlockBone p1={rHip} p2={rKnee} color={avatarPreset.armorColor} width={0.35} depth={0.35} />
-      <BlockBone p1={rKnee} p2={rAnkle} color={avatarPreset.skinColor} width={0.3} depth={0.3} />
+      <BlockBone p1={lHip} p2={lKnee} color={avatarPreset.armorColor} width={0.3} depth={0.3} />
+      <BlockBone p1={lKnee} p2={lAnkle} color={avatarPreset.skinColor} width={0.25} depth={0.25} />
+      <BlockBone p1={rHip} p2={rKnee} color={avatarPreset.armorColor} width={0.3} depth={0.3} />
+      <BlockBone p1={rKnee} p2={rAnkle} color={avatarPreset.skinColor} width={0.25} depth={0.25} />
+    </group>
+  );
+};
+
+// 3D Flowing Floor Arrow Component (Sliding along the 3D floor surface)
+const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
+  return (
+    <group position={[xOffset, -2.35, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Outer 3D Floor Tile */}
+      <Box args={[0.9, 0.9, 0.08]}>
+        <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={1.2} />
+      </Box>
+      {/* Arrow Symbol Text */}
+      <Text position={[0, 0, 0.06]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
+        {arrowData.arrow}
+      </Text>
     </group>
   );
 };
@@ -163,7 +173,6 @@ const playSound = (type) => {
 
 const DanceGame = () => {
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
   const poseLandmarkerRef = useRef(null);
   const animationRef = useRef(null);
 
@@ -182,9 +191,12 @@ const DanceGame = () => {
   const [p1Landmarks, setP1Landmarks] = useState(null);
   const [p2Landmarks, setP2Landmarks] = useState(null);
 
+  // 3D Floor Flowing Arrows State: [{ id, arrow, player, xOffset, z: -8.0 -> +1.5 }]
+  const [floor3DNotes, setFloor3DNotes] = useState([]);
+
   // Refs
   const modeRef = useRef('SINGLE');
-  const arrowNotesRef = useRef([]);
+  const floor3DNotesRef = useRef([]);
   const scoreP1Ref = useRef(0);
   const scoreP2Ref = useRef(0);
   const comboP1Ref = useRef(0);
@@ -273,19 +285,14 @@ const DanceGame = () => {
     comboP1Ref.current = 0;
     comboP2Ref.current = 0;
     setTimeLeft(60);
-    arrowNotesRef.current = [];
+    floor3DNotesRef.current = [];
+    setFloor3DNotes([]);
     setGameState('PLAYING');
   };
 
-  // Main Render Loop
+  // Main Motion Loop
   const renderGame = () => {
-    if (!canvasRef.current || !videoRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width;
-    const h = canvas.height;
-
-    ctx.clearRect(0, 0, w, h);
+    if (!videoRef.current) return;
 
     let playerFeet = [];
     if (videoRef.current.readyState >= 2 && poseLandmarkerRef.current) {
@@ -324,7 +331,7 @@ const DanceGame = () => {
 
           [27, 28, 31, 32].forEach(idx => {
             if (lm[idx] && lm[idx].visibility > 0.3) {
-              feetList.push({ x: (1 - lm[idx].x) * w, y: lm[idx].y * h });
+              feetList.push({ x: (0.5 - lm[idx].x) * 5.5, z: -lm[idx].z * 3 + 1.0 });
             }
           });
 
@@ -334,58 +341,33 @@ const DanceGame = () => {
     }
 
     if (gameState === 'PLAYING') {
-      const padY = h - 110;
-      const padSize = 85;
-
-      const p1Pads = ARROWS.map((arr, i) => ({
-        ...arr,
-        player: 1,
-        x: modeRef.current === 'SINGLE' ? (w / 2 - 180 + i * 95) : (w * 0.25 - 180 + i * 95),
-        y: padY,
-        w: padSize,
-        h: padSize
-      }));
-
-      const p2Pads = modeRef.current === 'MULTI' ? ARROWS.map((arr, i) => ({
-        ...arr,
-        player: 2,
-        x: w * 0.75 - 180 + i * 95,
-        y: padY,
-        w: padSize,
-        h: padSize
-      })) : [];
-
-      const allPads = [...p1Pads, ...p2Pads];
-
-      // Spawn Notes
-      if (Math.random() < 0.05 && arrowNotesRef.current.length < 8) {
+      // 1. Spawn 3D Flowing Floor Arrows (Flowing along 3D Floor Surface from z = -8.0 to z = +1.2)
+      if (Math.random() < 0.05 && floor3DNotesRef.current.length < 8) {
         const arrow = ARROWS[Math.floor(Math.random() * ARROWS.length)];
         const targetPlayer = modeRef.current === 'MULTI' ? (Math.random() < 0.5 ? 1 : 2) : 1;
+        const xBase = modeRef.current === 'MULTI' ? (targetPlayer === 1 ? -2.5 : 2.5) : 0;
 
-        const targetPad = allPads.find(p => p.player === targetPlayer && p.id === arrow.id);
-        if (targetPad) {
-          arrowNotesRef.current.push({
-            id: Math.random(),
-            arrow,
-            player: targetPlayer,
-            x: targetPad.x + targetPad.w / 2,
-            y: -50,
-            targetY: padY + padSize / 2,
-            speed: Math.random() * 2.5 + 4.5
-          });
-        }
+        floor3DNotesRef.current.push({
+          id: Math.random(),
+          arrow,
+          player: targetPlayer,
+          xOffset: xBase + arrow.xOffset,
+          z: -8.0, // Start deep at the back of the 3D floor
+          speed: Math.random() * 0.06 + 0.12
+        });
       }
 
-      // Update Notes
-      arrowNotesRef.current.forEach((note, nIdx) => {
-        note.y += note.speed;
+      // 2. Update 3D Flowing Notes
+      floor3DNotesRef.current.forEach((note, nIdx) => {
+        note.z += note.speed; // Flow forward along the 3D floor
 
+        // Check Foot Stepping Collision when 3D floor note reaches avatar's feet pad (z >= 0.8 && z <= 1.4)
         let isHit = false;
-        if (Math.abs(note.y - note.targetY) < 55) {
+        if (note.z >= 0.7 && note.z <= 1.4) {
           const pFeet = playerFeet.find(pf => pf.player === note.player);
           if (pFeet) {
             pFeet.feet.forEach(foot => {
-              if (Math.abs(foot.x - note.x) < 55 && Math.abs(foot.y - note.targetY) < 65) {
+              if (Math.abs(foot.x - note.xOffset) < 0.8) {
                 isHit = true;
               }
             });
@@ -406,78 +388,13 @@ const DanceGame = () => {
             setComboP2(comboP2Ref.current);
           }
 
-          arrowNotesRef.current.splice(nIdx, 1);
-        } else {
-          ctx.save();
-          ctx.translate(note.x, note.y);
-          ctx.fillStyle = note.arrow.color;
-          ctx.shadowColor = note.arrow.color;
-          ctx.shadowBlur = 15;
-          ctx.beginPath();
-          ctx.roundRect(-30, -30, 60, 60, 14);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 32px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(note.arrow.arrow, 0, 0);
-          ctx.restore();
+          floor3DNotesRef.current.splice(nIdx, 1);
         }
       });
 
-      arrowNotesRef.current = arrowNotesRef.current.filter(n => n.y < h + 60);
-
-      // Draw Floor Pads
-      allPads.forEach(pad => {
-        let isSteppedOn = false;
-        const pFeet = playerFeet.find(pf => pf.player === pad.player);
-        if (pFeet) {
-          pFeet.feet.forEach(foot => {
-            if (foot.x > pad.x && foot.x < pad.x + pad.w && foot.y > pad.y - 30 && foot.y < pad.y + pad.h + 30) {
-              isSteppedOn = true;
-            }
-          });
-        }
-
-        ctx.save();
-        ctx.fillStyle = isSteppedOn ? pad.color : 'rgba(15, 23, 42, 0.85)';
-        ctx.strokeStyle = pad.color;
-        ctx.lineWidth = isSteppedOn ? 6 : 3;
-        ctx.shadowColor = pad.color;
-        ctx.shadowBlur = isSteppedOn ? 30 : 10;
-        ctx.beginPath();
-        ctx.roundRect(pad.x, pad.y, pad.w, pad.h, 16);
-        ctx.fill();
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        ctx.fillStyle = isSteppedOn ? '#0f172a' : '#ffffff';
-        ctx.font = 'bold 36px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(pad.arrow, pad.x + pad.w / 2, pad.y + pad.h / 2);
-        ctx.restore();
-      });
-    }
-
-    // X-Pose Exit Banner
-    if (xPoseRef.current.progress > 0) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.roundRect(w / 2 - 180, 40, 360, 60, 16);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`🙅 Exiting to Menu... ${Math.round(xPoseRef.current.progress * 100)}%`, w / 2, 78);
-      ctx.restore();
+      // Filter passed 3D floor notes
+      floor3DNotesRef.current = floor3DNotesRef.current.filter(n => n.z < 2.0);
+      setFloor3DNotes([...floor3DNotesRef.current]);
     }
 
     animationRef.current = requestAnimationFrame(renderGame);
@@ -492,31 +409,51 @@ const DanceGame = () => {
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', backgroundColor: '#0f172a', overflow: 'hidden' }}>
       
-      {/* Hidden Camera Video */}
-      <video
-        ref={videoRef}
-        style={{ display: 'none' }}
-        playsInline
-        muted
-      />
+      {/* Hidden Video for Pose Tracking */}
+      <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
 
-      {/* 3D Avatar Stage Canvas Layer */}
+      {/* 3D Stage & Floor Flowing Arrows Canvas */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
-        <Canvas camera={{ position: [0, 0, 7], fov: 60 }}>
-          <ambientLight intensity={0.7} />
-          <pointLight position={[10, 10, 10]} intensity={1.5} />
+        <Canvas camera={{ position: [0, 2, 7.5], fov: 55 }}>
+          <ambientLight intensity={0.8} />
+          <pointLight position={[10, 10, 10]} intensity={1.8} />
           
-          {/* 3D Concert Stage Floor */}
-          <Box args={[14, 0.2, 8]} position={[0, -2.5, 0]}>
+          {/* 3D Flowing Floor Stage Track */}
+          <Box args={[12, 0.1, 14]} position={[0, -2.4, -2]}>
             <meshStandardMaterial color="#1e1b4b" metalness={0.8} roughness={0.2} />
           </Box>
+
+          {/* 3D Floor Target Step Pads at Feet (y = -2.35, z = 1.0) */}
+          {ARROWS.map((arr) => {
+            const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset : arr.xOffset;
+            return (
+              <group key={`pad_p1_${arr.id}`} position={[xPos, -2.34, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <Box args={[0.95, 0.95, 0.06]}>
+                  <meshStandardMaterial color="rgba(15,23,42,0.9)" emissive={arr.color} emissiveIntensity={0.6} />
+                </Box>
+                <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff">
+                  {arr.arrow}
+                </Text>
+              </group>
+            );
+          })}
+
+          {/* 3D Floor Flowing Rhythm Arrows */}
+          {floor3DNotes.map((note) => (
+            <FloorFlowing3DArrow
+              key={note.id}
+              arrowData={note.arrow}
+              xOffset={note.xOffset}
+              zPos={note.z}
+            />
+          ))}
 
           {/* Player 1 3D Avatar */}
           {p1Landmarks && (
             <Rigged3DAvatar
               points={p1Landmarks}
               avatarPreset={selectedAvatar}
-              positionOffset={mode === 'MULTI' ? [-2, 0, 0] : [0, 0, 0]}
+              positionOffset={mode === 'MULTI' ? [-2.5, 0, 1.0] : [0, 0, 1.0]}
             />
           )}
 
@@ -525,7 +462,7 @@ const DanceGame = () => {
             <Rigged3DAvatar
               points={p2Landmarks}
               avatarPreset={AVATAR_PRESETS[1]}
-              positionOffset={[2, 0, 0]}
+              positionOffset={[2.5, 0, 1.0]}
             />
           )}
 
@@ -533,22 +470,14 @@ const DanceGame = () => {
         </Canvas>
       </div>
 
-      {/* 2D Canvas Layer for Notes & Pads */}
-      <canvas
-        ref={canvasRef}
-        width={1280}
-        height={720}
-        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 2, pointerEvents: 'none' }}
-      />
-
       {/* Header Overlay */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
           <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
             &larr; Back to Menu
           </Link>
-          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Avatar Dance Stage</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Your 3D Avatar dances inside the screen! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Floor Flow Dance AR</h1>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Rhythm arrows flow along the 3D Floor! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -589,9 +518,9 @@ const DanceGame = () => {
           }}>
             {gameState === 'MENU' ? (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Avatar Dance Stage</h2>
+                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Floor Flow Dance AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Select your 3D Avatar and dance inside the screen in real-time!
+                  Rhythm arrows slide along the 3D Floor to your 3D Avatar's feet!
                 </p>
 
                 {/* Avatar Selection Picker */}
@@ -623,7 +552,7 @@ const DanceGame = () => {
                       boxShadow: '0 10px 25px rgba(0,243,255,0.4)'
                     }}
                   >
-                    👤 Single Player Stage
+                    👤 Single Player 3D Floor
                   </button>
 
                   <button
@@ -642,7 +571,7 @@ const DanceGame = () => {
               </>
             ) : (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: '#ec4899', margin: '0 0 10px 0' }}>🎉 Dance Complete!</h2>
+                <h2 style={{ fontSize: '2.5rem', color: '#ec4899', margin: '0 0 10px 0' }}>🎉 Song Complete!</h2>
                 
                 <div style={{ backgroundColor: '#0f172a', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem' }}>
                   <div style={{ color: '#94a3b8', fontSize: '1rem' }}>FINAL SCORE</div>
