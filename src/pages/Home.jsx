@@ -4,7 +4,7 @@ import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import '../styles/Home.css';
 
 const MENU_ITEMS = [
-  { path: '/dance', title: 'DDR Step Dance', desc: 'Step feet 🦶 on floor arrows! (DDR AR)', class: 'dance-card', icon: '💃' },
+  { path: '/dance', title: '3D Avatar Dance', desc: '3D Avatar dances inside the screen! (3D Stage)', class: 'dance-card', icon: '🕺' },
   { path: '/shooter', title: 'Bird Shooter', desc: 'Aim and shoot! (Hand Tracking)', class: 'shooter-card', icon: '🎯' },
   { path: '/avatar-test', title: 'Avatar Test', desc: 'Multiplayer 3D Mapping (Max 4 Players)', class: 'test-card', icon: '🤖' },
   { path: '/color-sort', title: 'Color Sort Game', desc: 'Grab & Sort Items by Color! (Hand Tracking)', class: 'sort-card', icon: '🧺' },
