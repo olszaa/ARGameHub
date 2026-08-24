@@ -6,21 +6,21 @@ import * as THREE from 'three';
 import { Link } from 'react-router-dom';
 
 const ARROWS = [
-  { id: 'left', name: 'Left', arrow: '⬅️', color: '#ec4899', xOffset: -1.8 },
-  { id: 'up', name: 'Up', arrow: '⬆️', color: '#00f3ff', xOffset: -0.6 },
-  { id: 'down', name: 'Down', arrow: '⬇️', color: '#eab308', xOffset: 0.6 },
-  { id: 'right', name: 'Right', arrow: '➡️', color: '#10b981', xOffset: 1.8 }
+  { id: 'left', name: 'Left', arrow: '⬅️', color: '#f472b6', xOffset: -1.8 },
+  { id: 'up', name: 'Up', arrow: '⬆️', color: '#fb7185', xOffset: -0.6 },
+  { id: 'down', name: 'Down', arrow: '⬇️', color: '#f472b6', xOffset: 0.6 },
+  { id: 'right', name: 'Right', arrow: '➡️', color: '#fb7185', xOffset: 1.8 }
 ];
 
 const AVATAR_PRESETS = [
-  { id: 'chameleon', name: '🦎 Meccha Chameleon (White)', modelPath: '/models/meccha_chameleon_white_character.glb', armorColor: '#f8fafc', hairColor: '#00f3ff', accentColor: '#00f3ff', skinColor: '#e2e8f0' },
-  { id: 'knight', name: '🛡️ Knight', modelPath: '/models/avatar_knight.glb', armorColor: '#475569', hairColor: '#ef4444', accentColor: '#00f3ff', skinColor: '#fca5a5' },
-  { id: 'cyberpunk', name: '⚡ Cyberpunk', modelPath: '/models/avatar_cyberpunk.glb', armorColor: '#1e1b4b', hairColor: '#ec4899', accentColor: '#00f3ff', skinColor: '#fed7aa' },
-  { id: 'robot', name: '🤖 Robot', modelPath: '/models/avatar_robot.glb', armorColor: '#334155', hairColor: '#eab308', accentColor: '#10b981', skinColor: '#94a3b8' },
+  { id: 'chameleon', name: '🦎 Meccha Chameleon (White)', modelPath: '/models/meccha_chameleon_white_character.glb', armorColor: '#ffffff', hairColor: '#38bdf8', accentColor: '#f472b6', skinColor: '#f8fafc' },
+  { id: 'knight', name: '🛡️ Knight', modelPath: '/models/avatar_knight.glb', armorColor: '#475569', hairColor: '#ef4444', accentColor: '#38bdf8', skinColor: '#fca5a5' },
+  { id: 'cyberpunk', name: '⚡ Cyberpunk', modelPath: '/models/avatar_cyberpunk.glb', armorColor: '#1e1b4b', hairColor: '#ec4899', accentColor: '#38bdf8', skinColor: '#fed7aa' },
+  { id: 'robot', name: '🤖 Robot', modelPath: '/models/avatar_robot.glb', armorColor: '#334155', hairColor: '#eab308', accentColor: '#f472b6', skinColor: '#94a3b8' },
   { id: 'chibi', name: '🐣 Chibi', modelPath: '/models/avatar_chibi.glb', armorColor: '#f43f5e', hairColor: '#fbbf24', accentColor: '#38bdf8', skinColor: '#ffedd5' }
 ];
 
-// Preload GLB models safely
+// Preload GLB models
 AVATAR_PRESETS.forEach(avatar => {
   try {
     useGLTF.preload(avatar.modelPath);
@@ -55,7 +55,7 @@ const GLTFModel = ({ modelPath }) => {
   }
 };
 
-// Rigged 3D Avatar Component incorporating Meccha Chameleon White Character Model
+// Rigged 3D Avatar Component
 const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) => {
   if (!points || points.length < 29) return null;
 
@@ -85,7 +85,6 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) 
 
   return (
     <group>
-      {/* Loaded Meccha Chameleon White Character 3D GLB Mesh */}
       <group position={headPos}>
         <Suspense fallback={null}>
           <GLTFModel modelPath={avatarPreset.modelPath} />
@@ -110,107 +109,82 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) 
   );
 };
 
-// 3D Concert Stage Light Pillar
-const StageLightPillar = ({ position, neonColor }) => {
-  return (
-    <group position={position}>
-      <Cylinder args={[0.12, 0.18, 6.5, 12]} position={[0, 1.0, 0]}>
-        <meshStandardMaterial color="#1e293b" metalness={0.9} roughness={0.1} />
-      </Cylinder>
-
-      {[-1.0, 0.2, 1.4, 2.6, 3.8].map((y, idx) => (
-        <Cylinder key={`ring_${idx}`} args={[0.2, 0.2, 0.12, 16]} position={[0, y, 0]}>
-          <meshStandardMaterial color={neonColor} emissive={neonColor} emissiveIntensity={3.5} />
-        </Cylinder>
-      ))}
-
-      <Sphere args={[0.4, 16, 16]} position={[0, 4.2, 0]}>
-        <meshStandardMaterial color={neonColor} emissive={neonColor} emissiveIntensity={4.5} />
-      </Sphere>
-
-      <Cylinder args={[0.4, 2.5, 7.0, 16]} position={[0, 0.7, 0]}>
-        <meshStandardMaterial color={neonColor} transparent opacity={0.12} />
-      </Cylinder>
-    </group>
-  );
-};
-
-// 3D Thick Extruded Flowing Floor Arrow Block
+// 3D Flowing Pastel Pink Piano Tile Arrow Block (Matching user image)
 const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
   return (
     <group position={[xOffset, -2.15, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
-      <Box args={[0.85, 0.85, 0.35]}>
-        <meshStandardMaterial color="#0f172a" roughness={0.2} metalness={0.7} />
+      {/* 3D Pastel Pink Piano Tile Base */}
+      <Box args={[1.05, 1.4, 0.25]}>
+        <meshStandardMaterial color="#f472b6" roughness={0.3} metalness={0.1} />
       </Box>
-      <Box args={[0.9, 0.9, 0.15]} position={[0, 0, 0.1]}>
-        <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={3.5} />
+      {/* Glowing Bright Pink Border Highlight */}
+      <Box args={[1.1, 1.45, 0.08]} position={[0, 0, 0.08]}>
+        <meshStandardMaterial color="#f472b6" emissive="#ec4899" emissiveIntensity={1.8} />
       </Box>
-      <Text position={[0, 0, 0.2]} fontSize={0.45} color="#ffffff" anchorX="center" anchorY="middle">
+      {/* Circle Ring Line & Arrow Symbol */}
+      <Text position={[0, 0, 0.16]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
         {arrowData.arrow}
       </Text>
     </group>
   );
 };
 
-// 3D Thick Extruded Stage Platform with Raised 3D Neon Lines & Glass Lanes
+// Dreamy Pastel Purple Piano Highway Track (Matching user image)
 const RunwayStageFloor = ({ mode }) => {
   const lineOffsets = [-2.4, -1.2, 0.0, 1.2, 2.4];
   const laneCenters = [-1.8, -0.6, 0.6, 1.8];
 
   return (
     <group position={[0, -2.4, -2]}>
+      {/* Main Pastel Purple/Violet 3D Runway Platform Base */}
       <Box args={[14.5, 0.5, 14.5]} position={[0, -0.25, 0]}>
-        <meshStandardMaterial color="#0b0f19" roughness={0.2} metalness={0.9} />
+        <meshStandardMaterial color="#9333ea" roughness={0.4} metalness={0.2} />
       </Box>
 
-      {/* Side Concert Light Pillars */}
-      <StageLightPillar position={[-6.8, -0.2, -5.0]} neonColor="#00f3ff" />
-      <StageLightPillar position={[-6.8, -0.2, 1.5]} neonColor="#ec4899" />
-      <StageLightPillar position={[6.8, -0.2, -5.0]} neonColor="#eab308" />
-      <StageLightPillar position={[6.8, -0.2, 1.5]} neonColor="#10b981" />
-
-      {/* SINGLE PLAYER RUNWAY */}
+      {/* SINGLE PLAYER PASTEL PURPLE RUNWAY */}
       {mode === 'SINGLE' ? (
         <group>
+          {/* 4 Pastel Purple Glass Lanes */}
           {laneCenters.map((x, idx) => (
-            <Box key={`glass_lane_${idx}`} args={[1.14, 0.15, 13.8]} position={[x, 0.08, 0]}>
-              <meshStandardMaterial color="#0f172a" transparent opacity={0.55} roughness={0.1} metalness={0.8} />
+            <Box key={`glass_lane_${idx}`} args={[1.14, 0.1, 13.8]} position={[x, 0.05, 0]}>
+              <meshStandardMaterial color="#a855f7" roughness={0.3} metalness={0.2} />
             </Box>
           ))}
 
+          {/* 5 Thin Glowing Golden Lane Separator Lines (Matching user image golden lines) */}
           {lineOffsets.map((x, idx) => (
-            <Box key={`line_divider_${idx}`} args={[0.1, 0.25, 13.8]} position={[x, 0.12, 0]}>
-              <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
+            <Box key={`line_divider_${idx}`} args={[0.04, 0.12, 13.8]} position={[x, 0.07, 0]}>
+              <meshStandardMaterial color="#fef08a" emissive="#fde047" emissiveIntensity={2.0} />
             </Box>
           ))}
         </group>
       ) : (
         /* 2-PLAYER BATTLE TWIN RUNWAYS */
         <group>
-          {/* Player 1 Left 3D Stage Runway */}
+          {/* Player 1 Left Runway */}
           <group position={[-2.5, 0, 0]}>
             {laneCenters.map((x, idx) => (
-              <Box key={`glass_lane_p1_${idx}`} args={[1.14 * 0.7, 0.15, 13.8]} position={[x * 0.7, 0.08, 0]}>
-                <meshStandardMaterial color="#0f172a" transparent opacity={0.55} roughness={0.1} />
+              <Box key={`glass_lane_p1_${idx}`} args={[1.14 * 0.7, 0.1, 13.8]} position={[x * 0.7, 0.05, 0]}>
+                <meshStandardMaterial color="#a855f7" roughness={0.3} />
               </Box>
             ))}
             {lineOffsets.map((x, idx) => (
-              <Box key={`line_p1_${idx}`} args={[0.08, 0.25, 13.8]} position={[x * 0.7, 0.12, 0]}>
-                <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
+              <Box key={`line_p1_${idx}`} args={[0.04, 0.12, 13.8]} position={[x * 0.7, 0.07, 0]}>
+                <meshStandardMaterial color="#fde047" emissive="#fde047" emissiveIntensity={2.0} />
               </Box>
             ))}
           </group>
 
-          {/* Player 2 Right 3D Stage Runway */}
+          {/* Player 2 Right Runway */}
           <group position={[2.5, 0, 0]}>
             {laneCenters.map((x, idx) => (
-              <Box key={`glass_lane_p2_${idx}`} args={[1.14 * 0.7, 0.15, 13.8]} position={[x * 0.7, 0.08, 0]}>
-                <meshStandardMaterial color="#0f172a" transparent opacity={0.55} roughness={0.1} />
+              <Box key={`glass_lane_p2_${idx}`} args={[1.14 * 0.7, 0.1, 13.8]} position={[x * 0.7, 0.05, 0]}>
+                <meshStandardMaterial color="#8b5cf6" roughness={0.3} />
               </Box>
             ))}
             {lineOffsets.map((x, idx) => (
-              <Box key={`line_p2_${idx}`} args={[0.08, 0.25, 13.8]} position={[x * 0.7, 0.12, 0]}>
-                <meshStandardMaterial color="#eab308" emissive="#eab308" emissiveIntensity={3.5} />
+              <Box key={`line_p2_${idx}`} args={[0.04, 0.12, 13.8]} position={[x * 0.7, 0.07, 0]}>
+                <meshStandardMaterial color="#fde047" emissive="#fde047" emissiveIntensity={2.0} />
               </Box>
             ))}
           </group>
@@ -218,8 +192,8 @@ const RunwayStageFloor = ({ mode }) => {
       )}
 
       {/* Target Line Bar */}
-      <Box args={[14.2, 0.2, 0.2]} position={[0, 0.1, 2.8]}>
-        <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={3.5} />
+      <Box args={[14.2, 0.15, 0.15]} position={[0, 0.08, 2.8]}>
+        <meshStandardMaterial color="#f472b6" emissive="#f472b6" emissiveIntensity={2.5} />
       </Box>
     </group>
   );
@@ -489,60 +463,64 @@ const DanceGame = () => {
   }, [status, gameState]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', backgroundColor: '#090d16', overflow: 'hidden' }}>
+    <div style={{
+      position: 'relative', width: '100vw', height: '100vh',
+      background: 'linear-gradient(180deg, #38bdf8 0%, #7dd3fc 40%, #bae6fd 70%, #e0f2fe 100%)',
+      overflow: 'hidden'
+    }}>
       
       <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
 
-      {/* 3D Cyber Stage Canvas */}
+      {/* 3D Dreamy Pastel Sky Stage Canvas */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
         <Canvas camera={{ position: [0, 2.2, 7.5], fov: 55 }}>
-          <ambientLight intensity={0.9} />
-          <pointLight position={[0, 10, 5]} intensity={2.5} color="#00f3ff" />
-          <pointLight position={[-8, 5, -2]} intensity={2.0} color="#ec4899" />
-          <pointLight position={[8, 5, -2]} intensity={2.0} color="#eab308" />
+          <ambientLight intensity={1.2} />
+          <pointLight position={[0, 12, -4]} intensity={3.0} color="#ffffff" />
+          <pointLight position={[-8, 6, 2]} intensity={2.0} color="#f472b6" />
+          <pointLight position={[8, 6, 2]} intensity={2.0} color="#fde047" />
 
-          {/* 3D Stage Platform with 4 Side Light Pillars */}
+          {/* Dreamy Pastel Purple Piano Highway Track */}
           <RunwayStageFloor mode={mode} />
 
-          {/* Player 1 3D Thick Step Box Slabs */}
+          {/* Player 1 3D Pastel Pink Target Step Box Slabs */}
           {ARROWS.map((arr) => {
             const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset * 0.7 : arr.xOffset;
             const isStepped = activeStepP1 === arr.id;
             return (
               <group key={`pad_p1_${arr.id}`} position={[xPos, -2.15, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[0.85, 0.85, 0.3]}>
-                  <meshStandardMaterial color={isStepped ? arr.color : "#0f172a"} roughness={0.2} metalness={0.8} />
+                <Box args={[1.0, 1.2, 0.2]}>
+                  <meshStandardMaterial color={isStepped ? "#f472b6" : "#fbcfe8"} roughness={0.3} />
                 </Box>
-                <Box args={[0.9, 0.9, 0.12]} position={[0, 0, 0.1]}>
-                  <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={isStepped ? 5.0 : 3.0} />
+                <Box args={[1.05, 1.25, 0.08]} position={[0, 0, 0.08]}>
+                  <meshStandardMaterial color="#f472b6" emissive="#f472b6" emissiveIntensity={isStepped ? 4.0 : 2.0} />
                 </Box>
-                <Text position={[0, 0, 0.18]} fontSize={0.45} color="#ffffff">
+                <Text position={[0, 0, 0.15]} fontSize={0.45} color="#ffffff">
                   {arr.arrow}
                 </Text>
               </group>
             );
           })}
 
-          {/* Player 2 3D Thick Step Box Slabs */}
+          {/* Player 2 3D Target Step Box Slabs */}
           {mode === 'MULTI' && ARROWS.map((arr) => {
             const xPos = 2.5 + arr.xOffset * 0.7;
             const isStepped = activeStepP2 === arr.id;
             return (
               <group key={`pad_p2_${arr.id}`} position={[xPos, -2.15, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[0.85, 0.85, 0.3]}>
-                  <meshStandardMaterial color={isStepped ? arr.color : "#0f172a"} roughness={0.2} metalness={0.8} />
+                <Box args={[1.0, 1.2, 0.2]}>
+                  <meshStandardMaterial color={isStepped ? "#f472b6" : "#fbcfe8"} roughness={0.3} />
                 </Box>
-                <Box args={[0.9, 0.9, 0.12]} position={[0, 0, 0.1]}>
-                  <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={isStepped ? 5.0 : 3.0} />
+                <Box args={[1.05, 1.25, 0.08]} position={[0, 0, 0.08]}>
+                  <meshStandardMaterial color="#f472b6" emissive="#f472b6" emissiveIntensity={isStepped ? 4.0 : 2.0} />
                 </Box>
-                <Text position={[0, 0, 0.18]} fontSize={0.45} color="#ffffff">
+                <Text position={[0, 0, 0.15]} fontSize={0.45} color="#ffffff">
                   {arr.arrow}
                 </Text>
               </group>
             );
           })}
 
-          {/* 3D Thick Extruded Flowing Floor Arrows */}
+          {/* 3D Flowing Pastel Pink Piano Tiles */}
           {floor3DNotes.map((note) => (
             <FloorFlowing3DArrow
               key={note.id}
@@ -552,7 +530,7 @@ const DanceGame = () => {
             />
           ))}
 
-          {/* Player 1 3D Avatar (Meccha Chameleon White Character Model) */}
+          {/* Player 1 3D Avatar */}
           {p1Landmarks && (
             <Rigged3DAvatar
               points={p1Landmarks}
@@ -577,32 +555,36 @@ const DanceGame = () => {
       {/* Header Overlay */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
-          <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
+          <Link to="/" style={{ pointerEvents: 'auto', color: '#0284c7', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
             &larr; Back to Menu
           </Link>
-          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>🦎 Meccha Chameleon Stage Dance AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Meccha Chameleon White Character 3D Model! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <h1 style={{ color: '#0f172a', margin: '5px 0 0 0', fontSize: '2.2rem', textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
+            🎶 Dreamy Magic Tiles AR
+          </h1>
+          <p style={{ color: '#334155', margin: 0, fontWeight: '600' }}>
+            Pastel Sky & Magic Piano Highway! | 🙅 Cross Arms X 1.2s to Exit
+          </p>
         </div>
 
         {gameState === 'PLAYING' && (
           <div style={{ display: 'flex', gap: '20px', pointerEvents: 'auto' }}>
-            <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #00f3ff', color: 'white', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', color: '#00f3ff', fontWeight: 'bold' }}>PLAYER 1</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP1}</div>
-              <div style={{ fontSize: '0.9rem', color: '#ec4899' }}>{comboP1} COMBO!</div>
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #f472b6', color: '#0f172a', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+              <div style={{ fontSize: '0.85rem', color: '#ec4899', fontWeight: 'bold' }}>PLAYER 1</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0284c7' }}>{scoreP1}</div>
+              <div style={{ fontSize: '0.9rem', color: '#eab308', fontWeight: 'bold' }}>{comboP1} COMBO!</div>
             </div>
 
             {mode === 'MULTI' && (
-              <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #eab308', color: 'white', textAlign: 'center' }}>
+              <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #eab308', color: '#0f172a', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
                 <div style={{ fontSize: '0.85rem', color: '#eab308', fontWeight: 'bold' }}>PLAYER 2</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP2}</div>
-                <div style={{ fontSize: '0.9rem', color: '#ec4899' }}>{comboP2} COMBO!</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0284c7' }}>{scoreP2}</div>
+                <div style={{ fontSize: '0.9rem', color: '#ec4899', fontWeight: 'bold' }}>{comboP2} COMBO!</div>
               </div>
             )}
 
-            <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>TIME</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#3b82f6' }}>{timeLeft}s</div>
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.1)', color: '#0f172a', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>TIME</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0284c7' }}>{timeLeft}s</div>
             </div>
           </div>
         )}
@@ -612,19 +594,19 @@ const DanceGame = () => {
       {gameState !== 'PLAYING' && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh',
-          backgroundColor: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(10px)',
+          backgroundColor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(12px)',
           display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 30
         }}>
           <div style={{
-            backgroundColor: '#1e293b', padding: '2.5rem', borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', maxWidth: '560px', width: '90%',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+            backgroundColor: '#ffffff', padding: '2.5rem', borderRadius: '28px',
+            border: '2px solid #f472b6', textAlign: 'center', maxWidth: '560px', width: '90%',
+            boxShadow: '0 25px 50px -12px rgba(244,114,182,0.3)'
           }}>
             {gameState === 'MENU' ? (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>🦎 Meccha Chameleon Stage AR</h2>
-                <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Select Meccha Chameleon (White Character) 3D Model to dance on the 3D Stage!
+                <h2 style={{ fontSize: '2.5rem', color: '#0f172a', margin: '0 0 10px 0' }}>🎶 Dreamy Magic Tiles AR</h2>
+                <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                  Pastel Sky & Magic Piano Tiles Highway! Step on pink piano tiles to play music.
                 </p>
 
                 {/* Avatar Selection Picker */}
@@ -635,9 +617,9 @@ const DanceGame = () => {
                       onClick={() => setSelectedAvatar(avatar)}
                       style={{
                         padding: '10px 14px', borderRadius: '12px', border: '2px solid',
-                        borderColor: selectedAvatar.id === avatar.id ? '#00f3ff' : 'rgba(255,255,255,0.1)',
-                        backgroundColor: selectedAvatar.id === avatar.id ? 'rgba(0,243,255,0.2)' : '#0f172a',
-                        color: 'white', cursor: 'pointer', fontWeight: 'bold'
+                        borderColor: selectedAvatar.id === avatar.id ? '#f472b6' : 'rgba(0,0,0,0.1)',
+                        backgroundColor: selectedAvatar.id === avatar.id ? '#fce7f3' : '#f8fafc',
+                        color: '#0f172a', cursor: 'pointer', fontWeight: 'bold'
                       }}
                     >
                       {avatar.name}
@@ -651,9 +633,9 @@ const DanceGame = () => {
                     disabled={status !== 'Ready'}
                     style={{
                       padding: '16px 28px', fontSize: '1.2rem', fontWeight: 'bold',
-                      backgroundColor: status === 'Ready' ? '#00f3ff' : '#64748b',
-                      color: '#0f172a', border: 'none', borderRadius: '12px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
-                      boxShadow: '0 10px 25px rgba(0,243,255,0.4)'
+                      backgroundColor: status === 'Ready' ? '#f472b6' : '#94a3b8',
+                      color: '#ffffff', border: 'none', borderRadius: '14px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
+                      boxShadow: '0 10px 25px rgba(244,114,182,0.4)'
                     }}
                   >
                     👤 Single Player Stage
@@ -664,9 +646,9 @@ const DanceGame = () => {
                     disabled={status !== 'Ready'}
                     style={{
                       padding: '16px 28px', fontSize: '1.2rem', fontWeight: 'bold',
-                      backgroundColor: status === 'Ready' ? '#eab308' : '#64748b',
-                      color: '#0f172a', border: 'none', borderRadius: '12px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
-                      boxShadow: '0 10px 25px rgba(234,179,8,0.4)'
+                      backgroundColor: status === 'Ready' ? '#38bdf8' : '#94a3b8',
+                      color: '#ffffff', border: 'none', borderRadius: '14px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
+                      boxShadow: '0 10px 25px rgba(56,189,248,0.4)'
                     }}
                   >
                     👥 2-Player 3D Battle
@@ -675,11 +657,11 @@ const DanceGame = () => {
               </>
             ) : (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: '#ec4899', margin: '0 0 10px 0' }}>🎉 Dance Complete!</h2>
+                <h2 style={{ fontSize: '2.5rem', color: '#ec4899', margin: '0 0 10px 0' }}>🎉 Song Complete!</h2>
                 
-                <div style={{ backgroundColor: '#0f172a', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem' }}>
-                  <div style={{ color: '#94a3b8', fontSize: '1rem' }}>FINAL SCORE</div>
-                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP1}</div>
+                <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem', border: '1px solid #f472b6' }}>
+                  <div style={{ color: '#64748b', fontSize: '1rem' }}>FINAL SCORE</div>
+                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#ec4899' }}>{scoreP1}</div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
@@ -687,16 +669,16 @@ const DanceGame = () => {
                     onClick={() => startGame('SINGLE')}
                     style={{
                       padding: '14px 24px', fontSize: '1.1rem', fontWeight: 'bold',
-                      backgroundColor: '#00f3ff', color: '#0f172a', border: 'none', borderRadius: '12px', cursor: 'pointer'
+                      backgroundColor: '#f472b6', color: '#ffffff', border: 'none', borderRadius: '12px', cursor: 'pointer'
                     }}
                   >
-                    👤 Dance Again
+                    👤 Play Again
                   </button>
                   <button
                     onClick={() => startGame('MULTI')}
                     style={{
                       padding: '14px 24px', fontSize: '1.1rem', fontWeight: 'bold',
-                      backgroundColor: '#eab308', color: '#0f172a', border: 'none', borderRadius: '12px', cursor: 'pointer'
+                      backgroundColor: '#38bdf8', color: '#ffffff', border: 'none', borderRadius: '12px', cursor: 'pointer'
                     }}
                   >
                     👥 2-Player 3D Battle
