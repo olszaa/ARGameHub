@@ -342,17 +342,18 @@ const DanceGame = () => {
 
     if (gameState === 'PLAYING') {
       // 1. Spawn 3D Flowing Floor Arrows (Flowing along 3D Floor Surface from z = -8.0 to z = +1.2)
-      if (Math.random() < 0.05 && floor3DNotesRef.current.length < 8) {
+      if (Math.random() < (modeRef.current === 'MULTI' ? 0.07 : 0.05) && floor3DNotesRef.current.length < 8) {
         const arrow = ARROWS[Math.floor(Math.random() * ARROWS.length)];
         const targetPlayer = modeRef.current === 'MULTI' ? (Math.random() < 0.5 ? 1 : 2) : 1;
         const xBase = modeRef.current === 'MULTI' ? (targetPlayer === 1 ? -2.5 : 2.5) : 0;
+        const xSpread = modeRef.current === 'MULTI' ? arrow.xOffset * 0.7 : arrow.xOffset;
 
         floor3DNotesRef.current.push({
           id: Math.random(),
           arrow,
           player: targetPlayer,
-          xOffset: xBase + arrow.xOffset,
-          z: -8.0, // Start deep at the back of the 3D floor
+          xOffset: xBase + xSpread,
+          z: -8.0,
           speed: Math.random() * 0.06 + 0.12
         });
       }
@@ -423,15 +424,30 @@ const DanceGame = () => {
             <meshStandardMaterial color="#1e1b4b" metalness={0.8} roughness={0.2} />
           </Box>
 
-          {/* 3D Floor Target Step Pads at Feet (y = -2.35, z = 1.0) */}
+          {/* Player 1 3D Floor Target Step Pads */}
           {ARROWS.map((arr) => {
-            const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset : arr.xOffset;
+            const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset * 0.7 : arr.xOffset;
             return (
               <group key={`pad_p1_${arr.id}`} position={[xPos, -2.34, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[0.95, 0.95, 0.06]}>
-                  <meshStandardMaterial color="rgba(15,23,42,0.9)" emissive={arr.color} emissiveIntensity={0.6} />
+                <Box args={[0.75, 0.75, 0.06]}>
+                  <meshStandardMaterial color="rgba(15,23,42,0.9)" emissive="#00f3ff" emissiveIntensity={0.8} />
                 </Box>
-                <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff">
+                <Text position={[0, 0, 0.05]} fontSize={0.4} color="#ffffff">
+                  {arr.arrow}
+                </Text>
+              </group>
+            );
+          })}
+
+          {/* Player 2 3D Floor Target Step Pads (Multiplayer) */}
+          {mode === 'MULTI' && ARROWS.map((arr) => {
+            const xPos = 2.5 + arr.xOffset * 0.7;
+            return (
+              <group key={`pad_p2_${arr.id}`} position={[xPos, -2.34, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <Box args={[0.75, 0.75, 0.06]}>
+                  <meshStandardMaterial color="rgba(15,23,42,0.9)" emissive="#eab308" emissiveIntensity={0.8} />
+                </Box>
+                <Text position={[0, 0, 0.05]} fontSize={0.4} color="#ffffff">
                   {arr.arrow}
                 </Text>
               </group>
