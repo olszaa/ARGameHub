@@ -65,6 +65,43 @@ const BeatBlock3D = ({ blockData }) => {
   );
 };
 
+// 3D Obstacle Wall Dodge Box Component (Must lean/duck to dodge!)
+const DodgeBox3D = ({ boxData }) => {
+  const meshRef = useRef();
+
+  useFrame(() => {
+    if (meshRef.current && boxData) {
+      meshRef.current.position.set(boxData.position[0], boxData.position[1], boxData.position[2]);
+    }
+  });
+
+  return (
+    <group ref={meshRef} position={boxData.position}>
+      {/* 3D Red Translucent Hazard Wall Cuboid */}
+      <Box args={[1.8, 2.2, 0.8]}>
+        <meshStandardMaterial
+          color="#dc2626"
+          emissive="#ef4444"
+          emissiveIntensity={2.0}
+          transparent
+          opacity={0.55}
+          roughness={0.1}
+        />
+      </Box>
+
+      {/* Wireframe Hazard Frame */}
+      <Box args={[1.88, 2.28, 0.88]}>
+        <meshStandardMaterial color="#f87171" emissive="#f87171" emissiveIntensity={3.5} wireframe />
+      </Box>
+
+      {/* Warning Text */}
+      <Text position={[0, 0, 0.45]} fontSize={0.4} color="#ffffff" anchorX="center" anchorY="middle">
+        ⚠️ DODGE! 🏃‍♂️
+      </Text>
+    </group>
+  );
+};
+
 // 3D Sliced Beat Block Half Component
 const SlicedBlockHalf3D = ({ halfData }) => {
   const meshRef = useRef();
@@ -192,6 +229,14 @@ const playSound = (type) => {
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
       osc.start();
       osc.stop(ctx.currentTime + 0.12);
+    } else if (type === 'hit') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(40, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.5, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
     }
   } catch (e) {}
 };
@@ -217,18 +262,21 @@ const LightsaberGame = () => {
 
   // 3D Game Engine State
   const [blocks3D, setBlocks3D] = useState([]);
+  const [dodgeBoxes3D, setDodgeBoxes3D] = useState([]);
   const [halves3D, setHalves3D] = useState([]);
 
   // Refs
   const modeRef = useRef('SINGLE');
   const gameStateRef = useRef('MENU');
   const blocks3DRef = useRef([]);
+  const dodgeBoxes3DRef = useRef([]);
   const halves3DRef = useRef([]);
   const lastSpawnTimeRef = useRef(0);
   const scoreP1Ref = useRef(0);
   const scoreP2Ref = useRef(0);
   const comboP1Ref = useRef(0);
   const comboP2Ref = useRef(0);
+  const playerPoseRef = useRef({ p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } });
   const saberP1LeftRef = useRef([-1.2, -0.5, 1.2]);
   const saberP1RightRef = useRef([1.2, -0.5, 1.2]);
   const saberP2LeftRef = useRef([-2.2, -0.5, 1.2]);
@@ -338,12 +386,13 @@ const LightsaberGame = () => {
     setTimeLeft(60);
     lastSpawnTimeRef.current = Date.now();
     blocks3DRef.current = [];
+    dodgeBoxes3DRef.current = [];
     halves3DRef.current = [];
     setBlocks3D([]);
+    setDodgeBoxes3D([]);
     setHalves3D([]);
     setGameState('PLAYING');
 
-    // Start Free Streaming Music Audio
     if (audioRef.current) {
       audioRef.current.src = currentTrack.url;
       audioRef.current.currentTime = 0;
@@ -402,9 +451,13 @@ const LightsaberGame = () => {
 
         const sortedPoses = [...res.landmarks].sort((a, b) => (1 - a[0].x) - (1 - b[0].x));
 
-        // Player 1 Left (Red) & Right (Blue) Lightsaber Wide Tracking
+        // Player 1 Position & Saber Hand Tracking
         if (sortedPoses[0]) {
           const lm1 = sortedPoses[0];
+          const chestX = (0.5 - (lm1[11].x + lm1[12].x) / 2) * 6.5;
+          const headY = (0.5 - lm1[0].y) * 4.5;
+          playerPoseRef.current.p1 = { x: chestX, y: headY };
+
           if (lm1[15] && lm1[15].visibility > 0.3) {
             saberP1LeftRef.current = [(0.5 - lm1[15].x) * 7.5, (0.5 - lm1[15].y) * 5.0, 1.2];
           }
@@ -413,9 +466,13 @@ const LightsaberGame = () => {
           }
         }
 
-        // Player 2 Lightsaber Tracking
+        // Player 2 Position & Saber Hand Tracking
         if (sortedPoses[1] && modeRef.current === 'MULTI') {
           const lm2 = sortedPoses[1];
+          const chestX = (0.5 - (lm2[11].x + lm2[12].x) / 2) * 6.5;
+          const headY = (0.5 - lm2[0].y) * 4.5;
+          playerPoseRef.current.p2 = { x: chestX, y: headY };
+
           if (lm2[15] && lm2[15].visibility > 0.3) {
             saberP2LeftRef.current = [(0.5 - lm2[15].x) * 7.5, (0.5 - lm2[15].y) * 5.0, 1.2];
           }
@@ -429,27 +486,39 @@ const LightsaberGame = () => {
     if (gameStateRef.current === 'PLAYING') {
       let stateChanged = false;
 
-      // 1. Spawn 3D Beat Blocks across 4 Lanes
+      // 1. Spawn 3D Beat Blocks OR 3D Obstacle Dodge Boxes
       const now = Date.now();
-      const spawnInterval = (60 / currentTrack.bpm) * 1000 * 1.5;
-      if (now - lastSpawnTimeRef.current > spawnInterval && blocks3DRef.current.length < 6) {
+      const spawnInterval = (60 / currentTrack.bpm) * 1000 * 1.4;
+      if (now - lastSpawnTimeRef.current > spawnInterval && (blocks3DRef.current.length + dodgeBoxes3DRef.current.length) < 6) {
         lastSpawnTimeRef.current = now;
 
-        const selectedLane = LANES[Math.floor(Math.random() * LANES.length)];
-        const selectedDir = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+        const isDodgeBox = Math.random() < 0.25; // 25% chance for 3D Dodge Obstacle Box!
 
-        blocks3DRef.current.push({
-          id: Math.random(),
-          color: selectedLane.color,
-          dir: selectedDir,
-          position: [selectedLane.x, -0.4, -12.0],
-          speed: 0.12,
-          hit: false
-        });
+        if (isDodgeBox) {
+          const dodgeX = Math.random() < 0.5 ? -1.5 : 1.5;
+          dodgeBoxes3DRef.current.push({
+            id: Math.random(),
+            position: [dodgeX, -0.3, -12.0],
+            speed: 0.11,
+            hit: false
+          });
+        } else {
+          const selectedLane = LANES[Math.floor(Math.random() * LANES.length)];
+          const selectedDir = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+
+          blocks3DRef.current.push({
+            id: Math.random(),
+            color: selectedLane.color,
+            dir: selectedDir,
+            position: [selectedLane.x, -0.4, -12.0],
+            speed: 0.12,
+            hit: false
+          });
+        }
         stateChanged = true;
       }
 
-      // 2. Slide 3D Beat Blocks & Check Collisions
+      // 2. Slide 3D Beat Blocks & Check Lightsaber Slash Collision
       blocks3DRef.current.forEach((block) => {
         block.position[2] += block.speed;
 
@@ -502,10 +571,43 @@ const LightsaberGame = () => {
         }
       });
 
+      // 3. Slide 3D Dodge Boxes & Check Player Lean/Dodge Collision
+      dodgeBoxes3DRef.current.forEach((box) => {
+        box.position[2] += box.speed;
+
+        if (!box.hit && box.position[2] >= 0.7 && box.position[2] <= 1.4) {
+          const p1 = playerPoseRef.current.p1;
+          const p2 = playerPoseRef.current.p2;
+
+          let hitP1 = Math.abs(p1.x - box.position[0]) < 1.1;
+          let hitP2 = modeRef.current === 'MULTI' && Math.abs(p2.x - box.position[0]) < 1.1;
+
+          if (hitP1 || hitP2) {
+            box.hit = true;
+            playSound('hit');
+            if (hitP1) {
+              comboP1Ref.current = 0;
+              setComboP1(0);
+              scoreP1Ref.current = Math.max(0, scoreP1Ref.current - 50);
+              setScoreP1(scoreP1Ref.current);
+            }
+            if (hitP2) {
+              comboP2Ref.current = 0;
+              setComboP2(0);
+              scoreP2Ref.current = Math.max(0, scoreP2Ref.current - 50);
+              setScoreP2(scoreP2Ref.current);
+            }
+          }
+        }
+      });
+
       const initialCount = blocks3DRef.current.length;
       blocks3DRef.current = blocks3DRef.current.filter(b => !b.hit && b.position[2] < 3.0);
+      dodgeBoxes3DRef.current = dodgeBoxes3DRef.current.filter(d => !d.hit && d.position[2] < 3.0);
+
       if (blocks3DRef.current.length !== initialCount || stateChanged) {
         setBlocks3D([...blocks3DRef.current]);
+        setDodgeBoxes3D([...dodgeBoxes3DRef.current]);
       }
 
       if (halves3DRef.current.length > 0) {
@@ -544,10 +646,17 @@ const LightsaberGame = () => {
 
           <LightsaberStageFloor />
 
+          {/* 3D Flying Directional Beat Blocks */}
           {blocks3D.map((block) => (
             <BeatBlock3D key={block.id} blockData={block} />
           ))}
 
+          {/* 3D Obstacle Wall Dodge Boxes (Must Lean/Duck to Dodge!) */}
+          {dodgeBoxes3D.map((box) => (
+            <DodgeBox3D key={box.id} boxData={box} />
+          ))}
+
+          {/* 3D Sliced Block Halves */}
           {halves3D.map((h) => (
             <SlicedBlockHalf3D key={h.id} halfData={h} />
           ))}
@@ -577,7 +686,7 @@ const LightsaberGame = () => {
             &larr; Back to Menu
           </button>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚔️ 3D Beat Saber AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>📻 Free Music Streaming Connected | 🔴 Left Red | 🔵 Right Blue | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Slash Beat Blocks & Lean Left/Right to Dodge ⚠️ Red Walls! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {/* Free Music Player Bar Component */}
@@ -630,7 +739,7 @@ const LightsaberGame = () => {
               <>
                 <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>⚔️ 3D Beat Saber AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Slash 3D beat blocks in sync with Free Streaming Music!
+                  Slash 3D beat blocks and lean left/right to dodge ⚠️ 3D Red Obstacle Boxes!
                 </p>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
