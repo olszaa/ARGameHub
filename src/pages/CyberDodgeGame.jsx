@@ -5,7 +5,7 @@ import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Link } from 'react-router-dom';
 
-// 3D Volumetric Translucent Glass Hologram Wall (Matching user screenshot)
+// 3D Volumetric Translucent Glass Hologram Wall
 const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0.6 }) => {
   return (
     <group position={position}>
@@ -95,7 +95,6 @@ const CyberHighwayFloor = ({ mode }) => {
 
   return (
     <group position={[0, -2.4, -2]}>
-      {/* Dark Arena Floor Base */}
       <Box args={[16, 0.1, 16]} position={[0, -0.05, 0]}>
         <meshStandardMaterial color="#050811" roughness={0.5} metalness={0.9} />
       </Box>
@@ -191,6 +190,7 @@ const CyberDodgeGame = () => {
   const modeRef = useRef('SINGLE');
   const gameStateRef = useRef('MENU');
   const obstaclesRef = useRef([]);
+  const lastSpawnTimeRef = useRef(0);
   const scoreP1Ref = useRef(0);
   const scoreP2Ref = useRef(0);
   const livesP1Ref = useRef(3);
@@ -282,12 +282,13 @@ const CyberDodgeGame = () => {
     livesP1Ref.current = 3;
     livesP2Ref.current = 3;
     setTimeLeft(60);
+    lastSpawnTimeRef.current = Date.now();
     obstaclesRef.current = [];
     setObstacles([]);
     setGameState('PLAYING');
   };
 
-  // Main Motion Detection & Wall Sliding Loop
+  // Main Motion Detection & Balanced Wall Sliding Loop
   const renderGame = () => {
     if (!videoRef.current) return;
 
@@ -351,8 +352,11 @@ const CyberDodgeGame = () => {
     }
 
     if (gameStateRef.current === 'PLAYING') {
-      // 1. Spawn Hologram Grid Walls & High Barrier Obstacles
-      if (Math.random() < 0.045 && obstaclesRef.current.length < 4) {
+      // 1. Spawn Walls with Comfortable Cooldown Gap (At least 2.2 seconds distance gap!)
+      const now = Date.now();
+      if (now - lastSpawnTimeRef.current > 2200 && obstaclesRef.current.length < 3) {
+        lastSpawnTimeRef.current = now;
+
         const types = ['left_wall', 'right_wall', 'center_wall', 'high_barrier'];
         const selectedType = types[Math.floor(Math.random() * types.length)];
 
@@ -370,13 +374,13 @@ const CyberDodgeGame = () => {
         obstaclesRef.current.push({
           id: Math.random(),
           type: selectedType,
-          position: [xOffset, yOffset, -10.0],
-          speed: Math.random() * 0.06 + 0.16,
+          position: [xOffset, yOffset, -12.0], // Start further back for smoother transition
+          speed: 0.08, // Comfortable playable sliding speed
           passed: false
         });
       }
 
-      // 2. Move 3D Volumetric Translucent Glass Walls Forward continuously
+      // 2. Smoothly Slide Hologram Walls Forward
       obstaclesRef.current.forEach((obs) => {
         obs.position[2] += obs.speed; // Slide forward to player at z = 1.2
 
@@ -493,7 +497,7 @@ const CyberDodgeGame = () => {
             &larr; Back to Menu
           </Link>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚡ Cyber Stage Dodge & Step AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>3D Volumetric Translucent Glass Walls! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Smooth & Comfortable Wall Sliding Speed! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -536,7 +540,7 @@ const CyberDodgeGame = () => {
               <>
                 <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>⚡ Cyber Stage Dodge & Step AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Stand on the 5 cyan neon cyber lanes! Dodge 3D volumetric translucent glass walls!
+                  Stand on the 5 cyan neon cyber lanes! Lean left/right and duck down under incoming 3D hologram walls!
                 </p>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
