@@ -5,7 +5,13 @@ import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 
-// 6 Slash Directions (Including Wide Side Slashes ⬅️ ➡️)
+// Free Streaming Royalty-Free Music Tracks
+const FREE_STREAMING_TRACKS = [
+  { id: 'track1', name: '⚡ Neon Cyber Beat', url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3', bpm: 135 },
+  { id: 'track2', name: '🌸 Pastel Pop Magic', url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3', bpm: 128 },
+  { id: 'track3', name: '🚀 Synthwave Rush', url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3', bpm: 140 }
+];
+
 const DIRECTIONS = [
   { id: 'UP', arrow: '⬆️', rot: 0 },
   { id: 'DOWN', arrow: '⬇️', rot: Math.PI },
@@ -15,7 +21,6 @@ const DIRECTIONS = [
   { id: 'SIDE_RIGHT', arrow: '▶️', rot: -Math.PI / 2, isSide: true }
 ];
 
-// 4 Beat Lanes (Outer Side Lanes & Center Lanes)
 const LANES = [
   { id: 'OUTER_LEFT', x: -2.8, color: 'red' },
   { id: 'INNER_LEFT', x: -1.0, color: 'red' },
@@ -39,7 +44,6 @@ const BeatBlock3D = ({ blockData }) => {
 
   return (
     <group ref={meshRef} position={blockData.position} rotation={[0, 0, blockData.dir.rot]}>
-      {/* 3D Main Beat Block Body */}
       <Box args={[0.9, 0.9, 0.9]}>
         <meshStandardMaterial
           color={blockColor}
@@ -50,12 +54,10 @@ const BeatBlock3D = ({ blockData }) => {
         />
       </Box>
 
-      {/* Outer Glowing Wireframe Bezel */}
       <Box args={[0.95, 0.95, 0.95]}>
         <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.5} wireframe />
       </Box>
 
-      {/* Front Face Directional Arrow */}
       <Text position={[0, 0, 0.48]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
         {blockData.dir.arrow}
       </Text>
@@ -89,15 +91,12 @@ const SlicedBlockHalf3D = ({ halfData }) => {
 const Lightsaber3D = forwardRef(({ color = '#ef4444', initialPos = [0, 0, 1.2] }, ref) => {
   return (
     <group ref={ref} position={initialPos}>
-      {/* Metallic Hilt Handle */}
       <Cylinder args={[0.06, 0.06, 0.4, 16]} position={[0, -0.2, 0]}>
         <meshStandardMaterial color="#64748b" metalness={0.9} roughness={0.1} />
       </Cylinder>
-      {/* Glowing Energy Plasma Blade */}
       <Cylinder args={[0.05, 0.05, 1.9, 16]} position={[0, 0.95, 0]}>
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={4.5} transparent opacity={0.9} />
       </Cylinder>
-      {/* Core Plasma White Core */}
       <Cylinder args={[0.02, 0.02, 1.85, 16]} position={[0, 0.95, 0]}>
         <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={3.5} />
       </Cylinder>
@@ -163,7 +162,6 @@ const LightsaberStageFloor = () => {
         <meshStandardMaterial color="#0b0f19" roughness={0.4} metalness={0.8} />
       </Box>
 
-      {/* 5 Neon Highway Lanes Dividers (Supporting Center & Side Slashes) */}
       {lineOffsets.map((xPos, idx) => (
         <Box key={`rail_${idx}`} args={[0.08, 0.08, 15.8]} position={[xPos, 0.04, 0]}>
           <meshStandardMaterial
@@ -201,12 +199,15 @@ const playSound = (type) => {
 const LightsaberGame = () => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
   const poseLandmarkerRef = useRef(null);
   const animationRef = useRef(null);
 
   // Game Mode & State
   const [mode, setMode] = useState('SINGLE');
   const [gameState, setGameState] = useState('MENU');
+  const [currentTrack, setCurrentTrack] = useState(FREE_STREAMING_TRACKS[0]);
+  const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const [scoreP1, setScoreP1] = useState(0);
   const [scoreP2, setScoreP2] = useState(0);
   const [comboP1, setComboP1] = useState(0);
@@ -236,6 +237,7 @@ const LightsaberGame = () => {
 
   // Clean Exit Back to Main Menu
   const handleBackToMain = () => {
+    if (audioRef.current) audioRef.current.pause();
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     if (videoRef.current?.srcObject) {
       videoRef.current.srcObject.getTracks().forEach(t => t.stop());
@@ -291,6 +293,7 @@ const LightsaberGame = () => {
 
     return () => {
       active = false;
+      if (audioRef.current) audioRef.current.pause();
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(t => t.stop());
@@ -310,6 +313,7 @@ const LightsaberGame = () => {
           if (prev <= 1) {
             gameStateRef.current = 'GAMEOVER';
             setGameState('GAMEOVER');
+            if (audioRef.current) audioRef.current.pause();
             return 0;
           }
           return prev - 1;
@@ -338,6 +342,35 @@ const LightsaberGame = () => {
     setBlocks3D([]);
     setHalves3D([]);
     setGameState('PLAYING');
+
+    // Start Free Streaming Music Audio
+    if (audioRef.current) {
+      audioRef.current.src = currentTrack.url;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+      setIsPlayingMusic(true);
+    }
+  };
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isPlayingMusic) {
+        audioRef.current.pause();
+        setIsPlayingMusic(false);
+      } else {
+        audioRef.current.play().catch(() => {});
+        setIsPlayingMusic(true);
+      }
+    }
+  };
+
+  const changeTrack = (track) => {
+    setCurrentTrack(track);
+    if (audioRef.current && gameState === 'PLAYING') {
+      audioRef.current.src = track.url;
+      audioRef.current.play().catch(() => {});
+      setIsPlayingMusic(true);
+    }
   };
 
   // High Performance Engine Loop
@@ -369,7 +402,7 @@ const LightsaberGame = () => {
 
         const sortedPoses = [...res.landmarks].sort((a, b) => (1 - a[0].x) - (1 - b[0].x));
 
-        // Player 1 Left (Red) & Right (Blue) Lightsaber Wide Range Tracking
+        // Player 1 Left (Red) & Right (Blue) Lightsaber Wide Tracking
         if (sortedPoses[0]) {
           const lm1 = sortedPoses[0];
           if (lm1[15] && lm1[15].visibility > 0.3) {
@@ -396,9 +429,10 @@ const LightsaberGame = () => {
     if (gameStateRef.current === 'PLAYING') {
       let stateChanged = false;
 
-      // 1. Spawn 3D Beat Blocks across 4 Lanes (Including Outer Side Slashes)
+      // 1. Spawn 3D Beat Blocks across 4 Lanes
       const now = Date.now();
-      if (now - lastSpawnTimeRef.current > 1500 && blocks3DRef.current.length < 6) {
+      const spawnInterval = (60 / currentTrack.bpm) * 1000 * 1.5;
+      if (now - lastSpawnTimeRef.current > spawnInterval && blocks3DRef.current.length < 6) {
         lastSpawnTimeRef.current = now;
 
         const selectedLane = LANES[Math.floor(Math.random() * LANES.length)];
@@ -415,7 +449,7 @@ const LightsaberGame = () => {
         stateChanged = true;
       }
 
-      // 2. Slide 3D Beat Blocks & Check Lightsaber Slash Collision
+      // 2. Slide 3D Beat Blocks & Check Collisions
       blocks3DRef.current.forEach((block) => {
         block.position[2] += block.speed;
 
@@ -424,7 +458,7 @@ const LightsaberGame = () => {
           const distP1 = Math.hypot(targetSaber[0] - block.position[0], targetSaber[1] - block.position[1]);
 
           let slashed = false;
-          if (distP1 < 1.1) { // Wide side slash hit radius
+          if (distP1 < 1.1) {
             slashed = true;
             scoreP1Ref.current += 100;
             comboP1Ref.current += 1;
@@ -498,6 +532,7 @@ const LightsaberGame = () => {
     <div style={{ position: 'relative', width: '100vw', height: '100vh', backgroundColor: '#090d16', overflow: 'hidden' }}>
       
       <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
+      <audio ref={audioRef} loop />
 
       {/* 3D Beat Saber High-Performance Canvas */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
@@ -507,20 +542,16 @@ const LightsaberGame = () => {
           <pointLight position={[-6, 5, -2]} intensity={2.5} color="#ef4444" />
           <pointLight position={[6, 5, -2]} intensity={2.5} color="#3b82f6" />
 
-          {/* 4-Lane Wide 3D Stage Floor */}
           <LightsaberStageFloor />
 
-          {/* 3D Flying Directional Beat Blocks (Center & Side Slashes) */}
           {blocks3D.map((block) => (
             <BeatBlock3D key={block.id} blockData={block} />
           ))}
 
-          {/* 3D Sliced Block Halves */}
           {halves3D.map((h) => (
             <SlicedBlockHalf3D key={h.id} halfData={h} />
           ))}
 
-          {/* High-Performance 3D Lightsaber Controller */}
           <LightsaberSceneController
             saberP1LeftRef={saberP1LeftRef}
             saberP1RightRef={saberP1RightRef}
@@ -533,7 +564,7 @@ const LightsaberGame = () => {
         </Canvas>
       </div>
 
-      {/* Header Overlay */}
+      {/* Header Overlay & Free Streaming Music Player */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
           <button
@@ -546,31 +577,41 @@ const LightsaberGame = () => {
             &larr; Back to Menu
           </button>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚔️ 3D Beat Saber AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>4-Lane Wide & Side Slashes! | 🔴 Left Red | 🔵 Right Blue | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>📻 Free Music Streaming Connected | 🔴 Left Red | 🔵 Right Blue | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
-        {gameState === 'PLAYING' && (
-          <div style={{ display: 'flex', gap: '20px', pointerEvents: 'auto' }}>
+        {/* Free Music Player Bar Component */}
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', pointerEvents: 'auto' }}>
+          <div style={{ backgroundColor: 'rgba(15,23,42,0.9)', padding: '10px 16px', borderRadius: '16px', border: '2px solid #00f3ff', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.2rem' }}>📻</span>
+            <select
+              value={currentTrack.id}
+              onChange={(e) => changeTrack(FREE_STREAMING_TRACKS.find(t => t.id === e.target.value))}
+              style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: 'white', fontWeight: 'bold' }}
+            >
+              {FREE_STREAMING_TRACKS.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={toggleMusic}
+              style={{
+                padding: '6px 12px', borderRadius: '8px', border: 'none',
+                backgroundColor: isPlayingMusic ? '#ef4444' : '#10b981', color: 'white', fontWeight: 'bold', cursor: 'pointer'
+              }}
+            >
+              {isPlayingMusic ? '⏸️ Pause' : '▶️ Play'}
+            </button>
+          </div>
+
+          {gameState === 'PLAYING' && (
             <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #ef4444', color: 'white', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', color: '#ef4444', fontWeight: 'bold' }}>PLAYER 1</div>
+              <div style={{ fontSize: '0.85rem', color: '#ef4444', fontWeight: 'bold' }}>SCORE</div>
               <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP1}</div>
               <div style={{ fontSize: '0.9rem', color: '#f59e0b' }}>🔥 Combo: {comboP1}</div>
             </div>
-
-            {mode === 'MULTI' && (
-              <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #00f3ff', color: 'white', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.85rem', color: '#00f3ff', fontWeight: 'bold' }}>PLAYER 2</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP2}</div>
-                <div style={{ fontSize: '0.9rem', color: '#f59e0b' }}>🔥 Combo: {comboP2}</div>
-              </div>
-            )}
-
-            <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>TIME</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#3b82f6' }}>{timeLeft}s</div>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Start / Game Over Modal */}
@@ -589,7 +630,7 @@ const LightsaberGame = () => {
               <>
                 <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>⚔️ 3D Beat Saber AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Slash 3D beat blocks coming from 4 lanes including wide side slashes ◀️ ▶️!
+                  Slash 3D beat blocks in sync with Free Streaming Music!
                 </p>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>

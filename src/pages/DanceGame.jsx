@@ -5,202 +5,98 @@ import { Box, Sphere, Cylinder, Text, OrbitControls, useGLTF } from '@react-thre
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 
+// Free Streaming Royalty-Free Music Tracks
+const FREE_STREAMING_TRACKS = [
+  { id: 'track1', name: '🌸 Pastel Pop Magic', url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3', bpm: 128 },
+  { id: 'track2', name: '⚡ Neon Cyber Beat', url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3', bpm: 135 },
+  { id: 'track3', name: '🚀 Synthwave Rush', url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3', bpm: 140 }
+];
+
 const ARROWS = [
   { id: 'left', name: 'Left', arrow: '⬅️', color: '#f472b6', xOffset: -1.8 },
-  { id: 'up', name: 'Up', arrow: '⬆️', color: '#fb7185', xOffset: -0.6 },
-  { id: 'down', name: 'Down', arrow: '⬇️', color: '#f472b6', xOffset: 0.6 },
-  { id: 'right', name: 'Right', arrow: '➡️', color: '#fb7185', xOffset: 1.8 }
+  { id: 'up', name: 'Up', arrow: '⬆️', color: '#38bdf8', xOffset: -0.6 },
+  { id: 'down', name: 'Down', arrow: '⬇️', color: '#facc15', xOffset: 0.6 },
+  { id: 'right', name: 'Right', arrow: '➡️', color: '#c084fc', xOffset: 1.8 }
 ];
 
 const AVATAR_PRESETS = [
-  { id: 'chameleon', name: '🦎 Meccha Chameleon (White)', modelPath: '/models/meccha_chameleon_white_character.glb', armorColor: '#ffffff', hairColor: '#38bdf8', accentColor: '#f472b6', skinColor: '#f8fafc' },
-  { id: 'knight', name: '🛡️ Knight', modelPath: '/models/avatar_knight.glb', armorColor: '#475569', hairColor: '#ef4444', accentColor: '#38bdf8', skinColor: '#fca5a5' },
-  { id: 'cyberpunk', name: '⚡ Cyberpunk', modelPath: '/models/avatar_cyberpunk.glb', armorColor: '#1e1b4b', hairColor: '#ec4899', accentColor: '#38bdf8', skinColor: '#fed7aa' },
-  { id: 'robot', name: '🤖 Robot', modelPath: '/models/avatar_robot.glb', armorColor: '#334155', hairColor: '#eab308', accentColor: '#f472b6', skinColor: '#94a3b8' },
-  { id: 'chibi', name: '🐣 Chibi', modelPath: '/models/avatar_chibi.glb', armorColor: '#f43f5e', hairColor: '#fbbf24', accentColor: '#38bdf8', skinColor: '#ffedd5' }
+  { id: 'knight', name: '⚔️ Cyber Knight', url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF-Binary/Fox.glb', scale: 0.015, yOffset: -2.4 },
+  { id: 'robot', name: '🤖 Mech Chameleon', url: 'https://raw.githubusercontent.com/gltf-models/meccha_chameleon_white_character.glb', scale: 0.8, yOffset: -2.4 }
 ];
 
-// Preload GLB models
-AVATAR_PRESETS.forEach(avatar => {
-  try {
-    useGLTF.preload(avatar.modelPath);
-  } catch(e) {}
-});
-
-// 3D Bone Helper
-const BlockBone = ({ p1, p2, color, width = 0.4, depth = 0.4 }) => {
-  if (!p1 || !p2) return null;
-  const distance = p1.distanceTo(p2);
-  if (distance < 0.01) return null;
-
-  const position = p1.clone().lerp(p2, 0.5);
-  const direction = new THREE.Vector3().subVectors(p2, p1).normalize();
-  const up = new THREE.Vector3(0, 1, 0);
-  const quaternion = new THREE.Quaternion().setFromUnitVectors(up, direction);
-
+// 3D Flowing Piano Note Tile (Matching Pastel Pink Magic Tiles)
+const PianoNoteTile3D = ({ noteData }) => {
   return (
-    <Box args={[width, distance, depth]} position={position} quaternion={quaternion}>
-      <meshStandardMaterial color={color} roughness={0.3} metalness={0.6} />
-    </Box>
-  );
-};
-
-// Loaded 3D GLB Model Component
-const GLTFModel = ({ modelPath }) => {
-  try {
-    const { scene } = useGLTF(modelPath);
-    return <primitive object={scene.clone()} scale={[1.2, 1.2, 1.2]} position={[0, -0.3, 0]} />;
-  } catch (e) {
-    return null;
-  }
-};
-
-// Rigged 3D Avatar Component
-const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) => {
-  if (!points || points.length < 29) return null;
-
-  const toV3 = (lm) => new THREE.Vector3(
-    (0.5 - lm.x) * 5.5 + positionOffset[0],
-    (0.5 - lm.y) * 5.5 + positionOffset[1],
-    -lm.z * 3 + positionOffset[2]
-  );
-
-  const nose = toV3(points[0]);
-  const lShoulder = toV3(points[11]);
-  const rShoulder = toV3(points[12]);
-  const lElbow = toV3(points[13]);
-  const rElbow = toV3(points[14]);
-  const lWrist = toV3(points[15]);
-  const rWrist = toV3(points[16]);
-  const lHip = toV3(points[23]);
-  const rHip = toV3(points[24]);
-  const lKnee = toV3(points[25]);
-  const rKnee = toV3(points[26]);
-  const lAnkle = toV3(points[27]);
-  const rAnkle = toV3(points[28]);
-
-  const shoulderMid = lShoulder.clone().lerp(rShoulder, 0.5);
-  const hipMid = lHip.clone().lerp(rHip, 0.5);
-  const headPos = nose.clone().lerp(shoulderMid, 0.3);
-
-  return (
-    <group>
-      <group position={headPos}>
-        <Suspense fallback={null}>
-          <GLTFModel modelPath={avatarPreset.modelPath} />
-        </Suspense>
-      </group>
-
-      <BlockBone p1={shoulderMid} p2={headPos} color={avatarPreset.skinColor} width={0.18} depth={0.18} />
-      <BlockBone p1={shoulderMid} p2={hipMid} color={avatarPreset.armorColor} width={0.7} depth={0.4} />
-      
-      {/* Arms */}
-      <BlockBone p1={lShoulder} p2={lElbow} color={avatarPreset.armorColor} width={0.25} depth={0.25} />
-      <BlockBone p1={lElbow} p2={lWrist} color={avatarPreset.skinColor} width={0.2} depth={0.2} />
-      <BlockBone p1={rShoulder} p2={rElbow} color={avatarPreset.armorColor} width={0.25} depth={0.25} />
-      <BlockBone p1={rElbow} p2={rWrist} color={avatarPreset.skinColor} width={0.2} depth={0.2} />
-
-      {/* Legs */}
-      <BlockBone p1={lHip} p2={lKnee} color={avatarPreset.armorColor} width={0.3} depth={0.3} />
-      <BlockBone p1={lKnee} p2={lAnkle} color={avatarPreset.skinColor} width={0.25} depth={0.25} />
-      <BlockBone p1={rHip} p2={rKnee} color={avatarPreset.armorColor} width={0.3} depth={0.3} />
-      <BlockBone p1={rKnee} p2={rAnkle} color={avatarPreset.skinColor} width={0.25} depth={0.25} />
-    </group>
-  );
-};
-
-// 3D Flowing Pastel Pink Piano Tile Arrow Block (Matching user image)
-const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
-  return (
-    <group position={[xOffset, -2.15, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
-      {/* 3D Pastel Pink Piano Tile Base */}
-      <Box args={[1.05, 1.4, 0.25]}>
-        <meshStandardMaterial color="#f472b6" roughness={0.3} metalness={0.1} />
+    <group position={[noteData.xOffset, -2.35, noteData.zPos]}>
+      {/* 3D Pastel Pink Piano Key Slab */}
+      <Box args={[1.1, 0.15, 1.4]}>
+        <meshStandardMaterial color="#f472b6" emissive="#ec4899" emissiveIntensity={2.5} roughness={0.2} />
       </Box>
-      {/* Glowing Bright Pink Border Highlight */}
-      <Box args={[1.1, 1.45, 0.08]} position={[0, 0, 0.08]}>
-        <meshStandardMaterial color="#f472b6" emissive="#ec4899" emissiveIntensity={1.8} />
+      {/* Outer White Bezel */}
+      <Box args={[1.15, 0.18, 1.45]}>
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={3.0} wireframe />
       </Box>
-      {/* Circle Ring Line & Arrow Symbol */}
-      <Text position={[0, 0, 0.16]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
-        {arrowData.arrow}
+      {/* Target Key Symbol */}
+      <Cylinder args={[0.35, 0.35, 0.2, 24]} position={[0, 0.05, 0]}>
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.5} />
+      </Cylinder>
+      {/* Arrow Emoji */}
+      <Text position={[0, 0.18, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.45} color="#0f172a">
+        {noteData.arrow}
       </Text>
     </group>
   );
 };
 
-// Dreamy Pastel Purple Piano Highway Track (Matching user image)
-const RunwayStageFloor = ({ mode }) => {
+// 3D Avatar Loader Component
+const Avatar3DModel = ({ url, scale = 1, yOffset = -2.4, landmarks }) => {
+  const { scene } = useGLTF(url);
+  const avatarRef = useRef();
+
+  useEffect(() => {
+    if (scene) {
+      scene.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+    }
+  }, [scene]);
+
+  return (
+    <primitive
+      ref={avatarRef}
+      object={scene.clone()}
+      scale={[scale, scale, scale]}
+      position={[0, yOffset, -1.0]}
+    />
+  );
+};
+
+// Dreamy Pastel Sky Stage Floor (Matching Piano Highway Screenshot)
+const PastelSkyHighwayStage = () => {
   const lineOffsets = [-2.4, -1.2, 0.0, 1.2, 2.4];
-  const laneCenters = [-1.8, -0.6, 0.6, 1.8];
 
   return (
     <group position={[0, -2.4, -2]}>
-      {/* Main Pastel Purple/Violet 3D Runway Platform Base */}
-      <Box args={[14.5, 0.5, 14.5]} position={[0, -0.25, 0]}>
-        <meshStandardMaterial color="#9333ea" roughness={0.4} metalness={0.2} />
+      {/* Pastel Purple Main Runway Floor */}
+      <Box args={[6.0, 0.1, 16]} position={[0, -0.05, 0]}>
+        <meshStandardMaterial color="#a855f7" emissive="#9333ea" emissiveIntensity={0.8} roughness={0.3} />
       </Box>
 
-      {/* SINGLE PLAYER PASTEL PURPLE RUNWAY */}
-      {mode === 'SINGLE' ? (
-        <group>
-          {/* 4 Pastel Purple Glass Lanes */}
-          {laneCenters.map((x, idx) => (
-            <Box key={`glass_lane_${idx}`} args={[1.14, 0.1, 13.8]} position={[x, 0.05, 0]}>
-              <meshStandardMaterial color="#a855f7" roughness={0.3} metalness={0.2} />
-            </Box>
-          ))}
-
-          {/* 5 Thin Glowing Golden Lane Separator Lines (Matching user image golden lines) */}
-          {lineOffsets.map((x, idx) => (
-            <Box key={`line_divider_${idx}`} args={[0.04, 0.12, 13.8]} position={[x, 0.07, 0]}>
-              <meshStandardMaterial color="#fef08a" emissive="#fde047" emissiveIntensity={2.0} />
-            </Box>
-          ))}
-        </group>
-      ) : (
-        /* 2-PLAYER BATTLE TWIN RUNWAYS */
-        <group>
-          {/* Player 1 Left Runway */}
-          <group position={[-2.5, 0, 0]}>
-            {laneCenters.map((x, idx) => (
-              <Box key={`glass_lane_p1_${idx}`} args={[1.14 * 0.7, 0.1, 13.8]} position={[x * 0.7, 0.05, 0]}>
-                <meshStandardMaterial color="#a855f7" roughness={0.3} />
-              </Box>
-            ))}
-            {lineOffsets.map((x, idx) => (
-              <Box key={`line_p1_${idx}`} args={[0.04, 0.12, 13.8]} position={[x * 0.7, 0.07, 0]}>
-                <meshStandardMaterial color="#fde047" emissive="#fde047" emissiveIntensity={2.0} />
-              </Box>
-            ))}
-          </group>
-
-          {/* Player 2 Right Runway */}
-          <group position={[2.5, 0, 0]}>
-            {laneCenters.map((x, idx) => (
-              <Box key={`glass_lane_p2_${idx}`} args={[1.14 * 0.7, 0.1, 13.8]} position={[x * 0.7, 0.05, 0]}>
-                <meshStandardMaterial color="#8b5cf6" roughness={0.3} />
-              </Box>
-            ))}
-            {lineOffsets.map((x, idx) => (
-              <Box key={`line_p2_${idx}`} args={[0.04, 0.12, 13.8]} position={[x * 0.7, 0.07, 0]}>
-                <meshStandardMaterial color="#fde047" emissive="#fde047" emissiveIntensity={2.0} />
-              </Box>
-            ))}
-          </group>
-        </group>
-      )}
-
-      {/* Target Line Bar */}
-      <Box args={[14.2, 0.15, 0.15]} position={[0, 0.08, 2.8]}>
-        <meshStandardMaterial color="#f472b6" emissive="#f472b6" emissiveIntensity={2.5} />
-      </Box>
+      {/* 5 Glowing Golden Separator Lines */}
+      {lineOffsets.map((xPos, idx) => (
+        <Box key={`golden_line_${idx}`} args={[0.06, 0.06, 15.8]} position={[xPos, 0.02, 0]}>
+          <meshStandardMaterial color="#fde047" emissive="#fef08a" emissiveIntensity={3.5} />
+        </Box>
+      ))}
     </group>
   );
 };
 
-// Web Audio API Sound Generator
-const playSound = (type) => {
+// Web Audio API Hit Sound Generator
+const playHitSound = (type) => {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -208,14 +104,13 @@ const playSound = (type) => {
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    if (type === 'step') {
-      osc.type = 'sine';
+    if (type === 'PERFECT') {
       osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.12);
-      gain.gain.setValueAtTime(0.35, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      osc.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
       osc.start();
-      osc.stop(ctx.currentTime + 0.12);
+      osc.stop(ctx.currentTime + 0.15);
     }
   } catch (e) {}
 };
@@ -223,6 +118,7 @@ const playSound = (type) => {
 const DanceGame = () => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
   const poseLandmarkerRef = useRef(null);
   const animationRef = useRef(null);
 
@@ -230,6 +126,8 @@ const DanceGame = () => {
   const [mode, setMode] = useState('SINGLE');
   const [gameState, setGameState] = useState('MENU');
   const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_PRESETS[0]);
+  const [currentTrack, setCurrentTrack] = useState(FREE_STREAMING_TRACKS[0]);
+  const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const [scoreP1, setScoreP1] = useState(0);
   const [scoreP2, setScoreP2] = useState(0);
   const [comboP1, setComboP1] = useState(0);
@@ -239,11 +137,9 @@ const DanceGame = () => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [status, setStatus] = useState('Initializing Model...');
 
-  // 3D Avatar Pose Landmarks
+  // 3D Avatar Pose Landmarks & Notes
   const [p1Landmarks, setP1Landmarks] = useState(null);
   const [p2Landmarks, setP2Landmarks] = useState(null);
-
-  // 3D Flowing Floor Arrows State
   const [floor3DNotes, setFloor3DNotes] = useState([]);
 
   // Refs
@@ -253,10 +149,12 @@ const DanceGame = () => {
   const scoreP2Ref = useRef(0);
   const comboP1Ref = useRef(0);
   const comboP2Ref = useRef(0);
+  const lastSpawnTimeRef = useRef(0);
   const xPoseRef = useRef({ startTime: 0, progress: 0 });
 
   // Clean Exit Back to Main Menu
   const handleBackToMain = () => {
+    if (audioRef.current) audioRef.current.pause();
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     if (videoRef.current?.srcObject) {
       videoRef.current.srcObject.getTracks().forEach(t => t.stop());
@@ -312,11 +210,14 @@ const DanceGame = () => {
 
     return () => {
       active = false;
+      if (audioRef.current) audioRef.current.pause();
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(t => t.stop());
       }
-      if (poseLandmarkerRef.current) poseLandmarkerRef.current.close();
+      if (poseLandmarkerRef.current) {
+        try { poseLandmarkerRef.current.close(); } catch (e) {}
+      }
     };
   }, []);
 
@@ -328,6 +229,7 @@ const DanceGame = () => {
         setTimeLeft(prev => {
           if (prev <= 1) {
             setGameState('GAMEOVER');
+            if (audioRef.current) audioRef.current.pause();
             return 0;
           }
           return prev - 1;
@@ -352,17 +254,45 @@ const DanceGame = () => {
     floor3DNotesRef.current = [];
     setFloor3DNotes([]);
     setGameState('PLAYING');
+
+    // Start Free Streaming Music Audio
+    if (audioRef.current) {
+      audioRef.current.src = currentTrack.url;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+      setIsPlayingMusic(true);
+    }
   };
 
-  // Main Motion Loop
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isPlayingMusic) {
+        audioRef.current.pause();
+        setIsPlayingMusic(false);
+      } else {
+        audioRef.current.play().catch(() => {});
+        setIsPlayingMusic(true);
+      }
+    }
+  };
+
+  const changeTrack = (track) => {
+    setCurrentTrack(track);
+    if (audioRef.current && gameState === 'PLAYING') {
+      audioRef.current.src = track.url;
+      audioRef.current.play().catch(() => {});
+      setIsPlayingMusic(true);
+    }
+  };
+
+  // Main Motion Detection Loop
   const renderGame = () => {
     if (!videoRef.current) return;
 
-    let playerFeet = [];
     if (videoRef.current.readyState >= 2 && poseLandmarkerRef.current) {
       const res = poseLandmarkerRef.current.detectForVideo(videoRef.current, performance.now());
       if (res.landmarks && res.landmarks.length > 0) {
-        // Robust X-Pose Exit Check (Relaxed threshold: distNorm < 0.25)
+        // Robust X-Pose Exit Check
         const p1Lm = res.landmarks[0];
         if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.3 && p1Lm[16].visibility > 0.3) {
           const distNorm = Math.hypot(p1Lm[15].x - p1Lm[16].x, p1Lm[15].y - p1Lm[16].y);
@@ -384,85 +314,93 @@ const DanceGame = () => {
 
         const sortedPoses = [...res.landmarks].sort((a, b) => (1 - a[0].x) - (1 - b[0].x));
 
-        if (sortedPoses[0]) setP1Landmarks(sortedPoses[0]);
-        if (sortedPoses[1] && modeRef.current === 'MULTI') setP2Landmarks(sortedPoses[1]);
+        // Player 1 Feet Step Check
+        if (sortedPoses[0]) {
+          setP1Landmarks(sortedPoses[0]);
+          const lm = sortedPoses[0];
+          let detectedP1 = null;
 
-        sortedPoses.forEach((lm, playerIdx) => {
-          if (modeRef.current === 'SINGLE' && playerIdx > 0) return;
+          if (lm[27] && lm[28]) {
+            const feetX = (0.5 - (lm[27].x + lm[28].x) / 2) * 4.5;
+            if (feetX < -1.0) detectedP1 = 'left';
+            else if (feetX > 1.0) detectedP1 = 'right';
+            else if (lm[27].y < lm[28].y - 0.05) detectedP1 = 'up';
+            else if (lm[27].y > lm[28].y + 0.05) detectedP1 = 'down';
+          }
+          setActiveStepP1(detectedP1);
 
-          const pNum = playerIdx + 1;
-          const feetList = [];
-
-          [27, 28, 31, 32].forEach(idx => {
-            if (lm[idx] && lm[idx].visibility > 0.3) {
-              feetList.push({ x: (0.5 - lm[idx].x) * 5.5, z: -lm[idx].z * 3 + 1.0 });
-            }
-          });
-
-          playerFeet.push({ player: pNum, feet: feetList });
-        });
-      }
-    }
-
-    if (gameState === 'PLAYING') {
-      if (Math.random() < (modeRef.current === 'MULTI' ? 0.07 : 0.05) && floor3DNotesRef.current.length < 8) {
-        const arrow = ARROWS[Math.floor(Math.random() * ARROWS.length)];
-        const targetPlayer = modeRef.current === 'MULTI' ? (Math.random() < 0.5 ? 1 : 2) : 1;
-        const xBase = modeRef.current === 'MULTI' ? (targetPlayer === 1 ? -2.5 : 2.5) : 0;
-        const xSpread = modeRef.current === 'MULTI' ? arrow.xOffset * 0.7 : arrow.xOffset;
-
-        floor3DNotesRef.current.push({
-          id: Math.random(),
-          arrow,
-          player: targetPlayer,
-          xOffset: xBase + xSpread,
-          z: -8.0,
-          speed: Math.random() * 0.06 + 0.12
-        });
-      }
-
-      let activeP1Pad = null;
-      let activeP2Pad = null;
-
-      floor3DNotesRef.current.forEach((note, nIdx) => {
-        note.z += note.speed;
-
-        let isHit = false;
-        if (note.z >= 0.5 && note.z <= 1.3) {
-          const pFeet = playerFeet.find(pf => pf.player === note.player);
-          if (pFeet) {
-            pFeet.feet.forEach(foot => {
-              if (Math.abs(foot.x - note.xOffset) < 0.75) {
-                isHit = true;
+          if (detectedP1 && gameState === 'PLAYING') {
+            floor3DNotesRef.current.forEach(note => {
+              if (!note.hitP1 && note.id === detectedP1 && note.zPos >= -1.0 && note.zPos <= 0.8) {
+                note.hitP1 = true;
+                playHitSound('PERFECT');
+                scoreP1Ref.current += 100;
+                comboP1Ref.current += 1;
+                setScoreP1(scoreP1Ref.current);
+                setComboP1(comboP1Ref.current);
               }
             });
           }
         }
 
-        if (isHit) {
-          playSound('step');
-          if (note.player === 1) {
-            scoreP1Ref.current += 100;
-            comboP1Ref.current += 1;
-            setScoreP1(scoreP1Ref.current);
-            setComboP1(comboP1Ref.current);
-            activeP1Pad = note.arrow.id;
-          } else {
-            scoreP2Ref.current += 100;
-            comboP2Ref.current += 1;
-            setScoreP2(scoreP2Ref.current);
-            setComboP2(comboP2Ref.current);
-            activeP2Pad = note.arrow.id;
-          }
+        // Player 2 Feet Step Check
+        if (sortedPoses[1] && modeRef.current === 'MULTI') {
+          setP2Landmarks(sortedPoses[1]);
+          const lm2 = sortedPoses[1];
+          let detectedP2 = null;
 
-          floor3DNotesRef.current.splice(nIdx, 1);
+          if (lm2[27] && lm2[28]) {
+            const feetX = (0.5 - (lm2[27].x + lm2[28].x) / 2) * 4.5;
+            if (feetX < -1.0) detectedP2 = 'left';
+            else if (feetX > 1.0) detectedP2 = 'right';
+            else if (lm2[27].y < lm2[28].y - 0.05) detectedP2 = 'up';
+            else if (lm2[27].y > lm2[28].y + 0.05) detectedP2 = 'down';
+          }
+          setActiveStepP2(detectedP2);
+
+          if (detectedP2 && gameState === 'PLAYING') {
+            floor3DNotesRef.current.forEach(note => {
+              if (!note.hitP2 && note.id === detectedP2 && note.zPos >= -1.0 && note.zPos <= 0.8) {
+                note.hitP2 = true;
+                playHitSound('PERFECT');
+                scoreP2Ref.current += 100;
+                comboP2Ref.current += 1;
+                setScoreP2(scoreP2Ref.current);
+                setComboP2(comboP2Ref.current);
+              }
+            });
+          }
         }
+      }
+    }
+
+    if (gameState === 'PLAYING') {
+      // 1. Spawn 3D Flowing Piano Note Tiles (In sync with Music BPM)
+      const now = Date.now();
+      const spawnInterval = (60 / currentTrack.bpm) * 1000 * 1.5;
+      if (now - lastSpawnTimeRef.current > spawnInterval && floor3DNotesRef.current.length < 5) {
+        lastSpawnTimeRef.current = now;
+        const randomArrow = ARROWS[Math.floor(Math.random() * ARROWS.length)];
+
+        floor3DNotesRef.current.push({
+          uid: Math.random(),
+          id: randomArrow.id,
+          arrow: randomArrow.arrow,
+          color: randomArrow.color,
+          xOffset: randomArrow.xOffset,
+          zPos: -10.0,
+          speed: 0.14,
+          hitP1: false,
+          hitP2: false
+        });
+      }
+
+      // 2. Slide 3D Piano Tiles Forward
+      floor3DNotesRef.current.forEach(note => {
+        note.zPos += note.speed;
       });
 
-      if (activeP1Pad) setActiveStepP1(activeP1Pad);
-      if (activeP2Pad) setActiveStepP2(activeP2Pad);
-
-      floor3DNotesRef.current = floor3DNotesRef.current.filter(n => n.z < 2.0);
+      floor3DNotesRef.current = floor3DNotesRef.current.filter(n => n.zPos < 2.0);
       setFloor3DNotes([...floor3DNotesRef.current]);
     }
 
@@ -478,94 +416,44 @@ const DanceGame = () => {
   return (
     <div style={{
       position: 'relative', width: '100vw', height: '100vh',
-      background: 'linear-gradient(180deg, #38bdf8 0%, #7dd3fc 40%, #bae6fd 70%, #e0f2fe 100%)',
+      background: 'linear-gradient(135deg, #38bdf8 0%, #bae6fd 50%, #fef08a 100%)',
       overflow: 'hidden'
     }}>
       
       <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
+      <audio ref={audioRef} loop />
 
-      {/* 3D Dreamy Pastel Sky Stage Canvas */}
+      {/* 3D Stage Canvas */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
-        <Canvas camera={{ position: [0, 2.2, 7.5], fov: 55 }}>
-          <ambientLight intensity={1.2} />
-          <pointLight position={[0, 12, -4]} intensity={3.0} color="#ffffff" />
-          <pointLight position={[-8, 6, 2]} intensity={2.0} color="#f472b6" />
-          <pointLight position={[8, 6, 2]} intensity={2.0} color="#fde047" />
+        <Canvas camera={{ position: [0, 2.0, 7.0], fov: 55 }}>
+          <ambientLight intensity={1.5} />
+          <directionalLight position={[0, 10, 5]} intensity={2.5} color="#ffffff" />
+          <pointLight position={[-5, 5, 2]} intensity={2.0} color="#f472b6" />
+          <pointLight position={[5, 5, 2]} intensity={2.0} color="#38bdf8" />
 
-          {/* Dreamy Pastel Purple Piano Highway Track */}
-          <RunwayStageFloor mode={mode} />
+          {/* Dreamy Pastel Sky Stage Runway Floor */}
+          <PastelSkyHighwayStage />
 
-          {/* Player 1 3D Pastel Pink Target Step Box Slabs */}
-          {ARROWS.map((arr) => {
-            const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset * 0.7 : arr.xOffset;
-            const isStepped = activeStepP1 === arr.id;
-            return (
-              <group key={`pad_p1_${arr.id}`} position={[xPos, -2.15, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[1.0, 1.2, 0.2]}>
-                  <meshStandardMaterial color={isStepped ? "#f472b6" : "#fbcfe8"} roughness={0.3} />
-                </Box>
-                <Box args={[1.05, 1.25, 0.08]} position={[0, 0, 0.08]}>
-                  <meshStandardMaterial color="#f472b6" emissive="#f472b6" emissiveIntensity={isStepped ? 4.0 : 2.0} />
-                </Box>
-                <Text position={[0, 0, 0.15]} fontSize={0.45} color="#ffffff">
-                  {arr.arrow}
-                </Text>
-              </group>
-            );
-          })}
-
-          {/* Player 2 3D Target Step Box Slabs */}
-          {mode === 'MULTI' && ARROWS.map((arr) => {
-            const xPos = 2.5 + arr.xOffset * 0.7;
-            const isStepped = activeStepP2 === arr.id;
-            return (
-              <group key={`pad_p2_${arr.id}`} position={[xPos, -2.15, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[1.0, 1.2, 0.2]}>
-                  <meshStandardMaterial color={isStepped ? "#f472b6" : "#fbcfe8"} roughness={0.3} />
-                </Box>
-                <Box args={[1.05, 1.25, 0.08]} position={[0, 0, 0.08]}>
-                  <meshStandardMaterial color="#f472b6" emissive="#f472b6" emissiveIntensity={isStepped ? 4.0 : 2.0} />
-                </Box>
-                <Text position={[0, 0, 0.15]} fontSize={0.45} color="#ffffff">
-                  {arr.arrow}
-                </Text>
-              </group>
-            );
-          })}
-
-          {/* 3D Flowing Pastel Pink Piano Tiles */}
+          {/* 3D Flowing Piano Note Tiles */}
           {floor3DNotes.map((note) => (
-            <FloorFlowing3DArrow
-              key={note.id}
-              arrowData={note.arrow}
-              xOffset={note.xOffset}
-              zPos={note.z}
-            />
+            <PianoNoteTile3D key={note.uid} noteData={note} />
           ))}
 
-          {/* Player 1 3D Avatar */}
-          {p1Landmarks && (
-            <Rigged3DAvatar
-              points={p1Landmarks}
-              avatarPreset={selectedAvatar}
-              positionOffset={mode === 'MULTI' ? [-2.5, 0, 2.0] : [0, 0, 2.0]}
+          {/* 3D Avatar Character */}
+          <Suspense fallback={null}>
+            <Avatar3DModel
+              url={selectedAvatar.url}
+              scale={selectedAvatar.scale}
+              yOffset={selectedAvatar.yOffset}
+              landmarks={p1Landmarks}
             />
-          )}
-
-          {/* Player 2 3D Avatar */}
-          {p2Landmarks && mode === 'MULTI' && (
-            <Rigged3DAvatar
-              points={p2Landmarks}
-              avatarPreset={AVATAR_PRESETS[1]}
-              positionOffset={[2.5, 0, 2.0]}
-            />
-          )}
+          </Suspense>
 
           <OrbitControls enableZoom={false} enablePan={false} maxPolarAngle={Math.PI / 2} />
         </Canvas>
       </div>
 
-      {/* Header Overlay */}
+      {/* Header Overlay & Free Streaming Music Control Bar */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
           <button
@@ -580,71 +468,63 @@ const DanceGame = () => {
           <h1 style={{ color: '#0f172a', margin: '5px 0 0 0', fontSize: '2.2rem', textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
             🎶 Dreamy Magic Tiles AR
           </h1>
-          <p style={{ color: '#334155', margin: 0, fontWeight: '600' }}>
-            Pastel Sky & Magic Piano Highway! | 🙅 Cross Arms X 1.2s to Exit
+          <p style={{ color: '#334155', margin: 0, fontWeight: 'bold' }}>
+            📻 Free Music Streaming Connected | Step on Floor Note Tiles! | 🙅 Cross Arms X 1.2s to Exit
           </p>
         </div>
 
-        {gameState === 'PLAYING' && (
-          <div style={{ display: 'flex', gap: '20px', pointerEvents: 'auto' }}>
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #f472b6', color: '#0f172a', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-              <div style={{ fontSize: '0.85rem', color: '#ec4899', fontWeight: 'bold' }}>PLAYER 1</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0284c7' }}>{scoreP1}</div>
-              <div style={{ fontSize: '0.9rem', color: '#eab308', fontWeight: 'bold' }}>{comboP1} COMBO!</div>
-            </div>
-
-            {mode === 'MULTI' && (
-              <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #eab308', color: '#0f172a', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                <div style={{ fontSize: '0.85rem', color: '#eab308', fontWeight: 'bold' }}>PLAYER 2</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0284c7' }}>{scoreP2}</div>
-                <div style={{ fontSize: '0.9rem', color: '#ec4899', fontWeight: 'bold' }}>{comboP2} COMBO!</div>
-              </div>
-            )}
-
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.1)', color: '#0f172a', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>TIME</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0284c7' }}>{timeLeft}s</div>
-            </div>
+        {/* Free Music Player Bar Component */}
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', pointerEvents: 'auto' }}>
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px 16px', borderRadius: '16px', border: '2px solid #38bdf8', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.2rem' }}>📻</span>
+            <select
+              value={currentTrack.id}
+              onChange={(e) => changeTrack(FREE_STREAMING_TRACKS.find(t => t.id === e.target.value))}
+              style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}
+            >
+              {FREE_STREAMING_TRACKS.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={toggleMusic}
+              style={{
+                padding: '6px 12px', borderRadius: '8px', border: 'none',
+                backgroundColor: isPlayingMusic ? '#ef4444' : '#10b981', color: 'white', fontWeight: 'bold', cursor: 'pointer'
+              }}
+            >
+              {isPlayingMusic ? '⏸️ Pause' : '▶️ Play'}
+            </button>
           </div>
-        )}
+
+          {gameState === 'PLAYING' && (
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #f472b6', color: '#0f172a', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.85rem', color: '#db2777', fontWeight: 'bold' }}>SCORE</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#059669' }}>{scoreP1}</div>
+              <div style={{ fontSize: '0.9rem', color: '#d97706' }}>🔥 Combo: {comboP1}</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Start / Game Over Modal */}
       {gameState !== 'PLAYING' && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh',
-          backgroundColor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(12px)',
+          backgroundColor: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(8px)',
           display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 30
         }}>
           <div style={{
-            backgroundColor: '#ffffff', padding: '2.5rem', borderRadius: '28px',
+            backgroundColor: 'rgba(255,255,255,0.95)', padding: '2.5rem', borderRadius: '24px',
             border: '2px solid #f472b6', textAlign: 'center', maxWidth: '560px', width: '90%',
-            boxShadow: '0 25px 50px -12px rgba(244,114,182,0.3)'
+            boxShadow: '0 25px 50px -12px rgba(244,114,182,0.4)'
           }}>
             {gameState === 'MENU' ? (
               <>
                 <h2 style={{ fontSize: '2.5rem', color: '#0f172a', margin: '0 0 10px 0' }}>🎶 Dreamy Magic Tiles AR</h2>
-                <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Pastel Sky & Magic Piano Tiles Highway! Step on pink piano tiles to play music.
+                <p style={{ color: '#475569', fontSize: '1rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>
+                  Dance with 3D Avatar on the Pastel Sky Piano Highway connected with Free Streaming Music!
                 </p>
-
-                {/* Avatar Selection Picker */}
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '2rem', flexWrap: 'wrap' }}>
-                  {AVATAR_PRESETS.map((avatar) => (
-                    <button
-                      key={avatar.id}
-                      onClick={() => setSelectedAvatar(avatar)}
-                      style={{
-                        padding: '10px 14px', borderRadius: '12px', border: '2px solid',
-                        borderColor: selectedAvatar.id === avatar.id ? '#f472b6' : 'rgba(0,0,0,0.1)',
-                        backgroundColor: selectedAvatar.id === avatar.id ? '#fce7f3' : '#f8fafc',
-                        color: '#0f172a', cursor: 'pointer', fontWeight: 'bold'
-                      }}
-                    >
-                      {avatar.name}
-                    </button>
-                  ))}
-                </div>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
                   <button
@@ -652,12 +532,12 @@ const DanceGame = () => {
                     disabled={status !== 'Ready'}
                     style={{
                       padding: '16px 28px', fontSize: '1.2rem', fontWeight: 'bold',
-                      backgroundColor: status === 'Ready' ? '#f472b6' : '#94a3b8',
-                      color: '#ffffff', border: 'none', borderRadius: '14px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
-                      boxShadow: '0 10px 25px rgba(244,114,182,0.4)'
+                      backgroundColor: status === 'Ready' ? '#38bdf8' : '#cbd5e1',
+                      color: '#0f172a', border: 'none', borderRadius: '12px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
+                      boxShadow: '0 10px 25px rgba(56,189,248,0.4)'
                     }}
                   >
-                    👤 Single Player Stage
+                    👤 1-Player Dance
                   </button>
 
                   <button
@@ -665,22 +545,22 @@ const DanceGame = () => {
                     disabled={status !== 'Ready'}
                     style={{
                       padding: '16px 28px', fontSize: '1.2rem', fontWeight: 'bold',
-                      backgroundColor: status === 'Ready' ? '#38bdf8' : '#94a3b8',
-                      color: '#ffffff', border: 'none', borderRadius: '14px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
-                      boxShadow: '0 10px 25px rgba(56,189,248,0.4)'
+                      backgroundColor: status === 'Ready' ? '#f472b6' : '#cbd5e1',
+                      color: '#ffffff', border: 'none', borderRadius: '12px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
+                      boxShadow: '0 10px 25px rgba(244,114,182,0.4)'
                     }}
                   >
-                    👥 2-Player 3D Battle
+                    👥 2-Player Battle
                   </button>
                 </div>
               </>
             ) : (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: '#ec4899', margin: '0 0 10px 0' }}>🎉 Song Complete!</h2>
+                <h2 style={{ fontSize: '2.5rem', color: '#059669', margin: '0 0 10px 0' }}>🎉 Dance Finish!</h2>
                 
-                <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem', border: '1px solid #f472b6' }}>
-                  <div style={{ color: '#64748b', fontSize: '1rem' }}>FINAL SCORE</div>
-                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#ec4899' }}>{scoreP1}</div>
+                <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem', border: '1px solid #e2e8f0' }}>
+                  <div style={{ color: '#64748b', fontSize: '1rem', fontWeight: 'bold' }}>FINAL SCORE</div>
+                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#059669' }}>{scoreP1}</div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
@@ -688,19 +568,19 @@ const DanceGame = () => {
                     onClick={() => startGame('SINGLE')}
                     style={{
                       padding: '14px 24px', fontSize: '1.1rem', fontWeight: 'bold',
-                      backgroundColor: '#f472b6', color: '#ffffff', border: 'none', borderRadius: '12px', cursor: 'pointer'
+                      backgroundColor: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '12px', cursor: 'pointer'
                     }}
                   >
-                    👤 Play Again
+                    👤 Try Again
                   </button>
                   <button
                     onClick={() => startGame('MULTI')}
                     style={{
                       padding: '14px 24px', fontSize: '1.1rem', fontWeight: 'bold',
-                      backgroundColor: '#38bdf8', color: '#ffffff', border: 'none', borderRadius: '12px', cursor: 'pointer'
+                      backgroundColor: '#f472b6', color: '#ffffff', border: 'none', borderRadius: '12px', cursor: 'pointer'
                     }}
                   >
-                    👥 2-Player 3D Battle
+                    👥 2-Player Battle
                   </button>
                 </div>
               </>
