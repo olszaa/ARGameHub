@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { useNavigate } from 'react-router-dom';
 import { Sphere, Box, Cylinder, OrbitControls, Line, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { Link } from 'react-router-dom';
@@ -242,7 +243,23 @@ const SkeletonRenderer = ({ landmarksList, customAvatar }) => {
 };
 
 const AvatarTest = () => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
+  const poseLandmarkerRef = useRef(null);
+  const animationRef = useRef(null);
+  
+  // Clean Exit Back to Main Menu
+  const handleBackToMain = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+    }
+    if (poseLandmarkerRef.current) {
+      try { poseLandmarkerRef.current.close(); } catch (e) {}
+    }
+    navigate('/');
+  };
+
   const [landmarksList, setLandmarksList] = useState([]);
   const [status, setStatus] = useState('Loading Model...');
   
@@ -264,8 +281,6 @@ const AvatarTest = () => {
     { id: 'chibi', name: '🐣 Chibi' }
   ];
 
-  const poseLandmarkerRef = useRef(null);
-  const animationRef = useRef(null);
   const lastVideoTime = useRef(-1);
   const previousLandmarksRef = useRef([]);
   const xPoseRef = useRef({ startTime: 0, progress: 0 });
@@ -424,7 +439,7 @@ const AvatarTest = () => {
 
               if (progress >= 1) {
                 xPoseRef.current = { startTime: 0, progress: 0 };
-                window.location.href = '/'; // Go Back to Home Menu
+                handleBackToMain();
                 return;
               }
             } else {
@@ -476,9 +491,17 @@ const AvatarTest = () => {
 
       {/* UI Overlay */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10, color: 'white', fontFamily: 'sans-serif', pointerEvents: 'none' }}>
-        <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', display: 'block', marginBottom: '10px' }}>
-          &larr; Back to Menu
-        </Link>
+        <div>
+          <button
+            onClick={handleBackToMain}
+            style={{
+              pointerEvents: 'auto', background: 'none', border: 'none', color: '#00d2ff',
+              fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', padding: 0
+            }}
+          >
+            &larr; Back to Menu
+          </button>
+        </div>
         <h1 style={{ margin: '0 0 10px 0', fontSize: '2rem' }}>Multiplayer Avatar Test</h1>
         <p style={{ margin: 0, color: '#94a3b8' }}>Status: {status}</p>
         <p style={{ margin: 0, color: '#94a3b8' }}>Players Detected: {landmarksList.length}/4</p>

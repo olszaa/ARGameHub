@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Web Audio API Sound Generator
 const playSound = (type) => {
@@ -39,10 +39,23 @@ const playSound = (type) => {
 };
 
 const RunnerGame = () => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const poseLandmarkerRef = useRef(null);
   const animationRef = useRef(null);
+
+  // Clean Exit Back to Main Menu
+  const handleBackToMain = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+    }
+    if (poseLandmarkerRef.current) {
+      try { poseLandmarkerRef.current.close(); } catch (e) {}
+    }
+    navigate('/');
+  };
 
   // Game Mode & State
   const [mode, setMode] = useState('SINGLE'); // SINGLE or MULTI
@@ -148,11 +161,11 @@ const RunnerGame = () => {
     if (videoRef.current.readyState >= 2 && poseLandmarkerRef.current) {
       const res = poseLandmarkerRef.current.detectForVideo(videoRef.current, performance.now());
       if (res.landmarks && res.landmarks.length > 0) {
-        // X-Pose Exit Check
+        // Robust X-Pose Exit Check (Relaxed threshold: distNorm < 0.25)
         const p1Lm = res.landmarks[0];
-        if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.4 && p1Lm[16].visibility > 0.4) {
+        if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.3 && p1Lm[16].visibility > 0.3) {
           const distNorm = Math.hypot(p1Lm[15].x - p1Lm[16].x, p1Lm[15].y - p1Lm[16].y);
-          if (distNorm < 0.15 && p1Lm[15].y < 0.8 && p1Lm[16].y < 0.8) {
+          if (distNorm < 0.25) {
             if (xPoseRef.current.startTime === 0) xPoseRef.current.startTime = Date.now();
             const elapsed = Date.now() - xPoseRef.current.startTime;
             const progress = Math.min(1, elapsed / 1200);
@@ -160,7 +173,7 @@ const RunnerGame = () => {
 
             if (progress >= 1) {
               xPoseRef.current = { startTime: 0, progress: 0 };
-              window.location.href = '/';
+              handleBackToMain();
               return;
             }
           } else {
@@ -435,9 +448,15 @@ const RunnerGame = () => {
 
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
-          <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
+          <button
+            onClick={handleBackToMain}
+            style={{
+              pointerEvents: 'auto', background: 'none', border: 'none', color: '#00d2ff',
+              fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', padding: 0
+            }}
+          >
             &larr; Back to Menu
-          </Link>
+          </button>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>🏃 Subway Runner AR</h1>
           <p style={{ color: '#94a3b8', margin: 0 }}>Lean Left/Right | Jump 🦘 | Duck 🏃‍♂️ | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>

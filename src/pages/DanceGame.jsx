@@ -3,7 +3,7 @@ import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { Canvas } from '@react-three/fiber';
 import { Box, Sphere, Cylinder, Text, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const ARROWS = [
   { id: 'left', name: 'Left', arrow: '⬅️', color: '#f472b6', xOffset: -1.8 },
@@ -221,6 +221,7 @@ const playSound = (type) => {
 };
 
 const DanceGame = () => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const poseLandmarkerRef = useRef(null);
   const animationRef = useRef(null);
@@ -253,6 +254,18 @@ const DanceGame = () => {
   const comboP1Ref = useRef(0);
   const comboP2Ref = useRef(0);
   const xPoseRef = useRef({ startTime: 0, progress: 0 });
+
+  // Clean Exit Back to Main Menu
+  const handleBackToMain = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+    }
+    if (poseLandmarkerRef.current) {
+      try { poseLandmarkerRef.current.close(); } catch (e) {}
+    }
+    navigate('/');
+  };
 
   useEffect(() => {
     let active = true;
@@ -349,11 +362,11 @@ const DanceGame = () => {
     if (videoRef.current.readyState >= 2 && poseLandmarkerRef.current) {
       const res = poseLandmarkerRef.current.detectForVideo(videoRef.current, performance.now());
       if (res.landmarks && res.landmarks.length > 0) {
-        // X-Pose Exit Check
+        // Robust X-Pose Exit Check (Relaxed threshold: distNorm < 0.25)
         const p1Lm = res.landmarks[0];
-        if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.4 && p1Lm[16].visibility > 0.4) {
+        if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.3 && p1Lm[16].visibility > 0.3) {
           const distNorm = Math.hypot(p1Lm[15].x - p1Lm[16].x, p1Lm[15].y - p1Lm[16].y);
-          if (distNorm < 0.15 && p1Lm[15].y < 0.8 && p1Lm[16].y < 0.8) {
+          if (distNorm < 0.25) {
             if (xPoseRef.current.startTime === 0) xPoseRef.current.startTime = Date.now();
             const elapsed = Date.now() - xPoseRef.current.startTime;
             const progress = Math.min(1, elapsed / 1200);
@@ -361,7 +374,7 @@ const DanceGame = () => {
 
             if (progress >= 1) {
               xPoseRef.current = { startTime: 0, progress: 0 };
-              window.location.href = '/';
+              handleBackToMain();
               return;
             }
           } else {
@@ -555,9 +568,15 @@ const DanceGame = () => {
       {/* Header Overlay */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
-          <Link to="/" style={{ pointerEvents: 'auto', color: '#0284c7', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
+          <button
+            onClick={handleBackToMain}
+            style={{
+              pointerEvents: 'auto', background: 'none', border: 'none', color: '#0284c7',
+              fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', padding: 0
+            }}
+          >
             &larr; Back to Menu
-          </Link>
+          </button>
           <h1 style={{ color: '#0f172a', margin: '5px 0 0 0', fontSize: '2.2rem', textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
             🎶 Dreamy Magic Tiles AR
           </h1>

@@ -3,13 +3,12 @@ import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { Canvas } from '@react-three/fiber';
 import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // 3D Volumetric Translucent Glass Hologram Wall
 const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0.6 }) => {
   return (
     <group position={position}>
-      {/* 3D Thick Translucent Cyan Glass Main Cuboid Body */}
       <Box args={[width, height, depth]}>
         <meshStandardMaterial
           color="#00f3ff"
@@ -22,7 +21,6 @@ const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0
         />
       </Box>
 
-      {/* 3D Glowing Cyan Outer Bezel Frame */}
       <Box args={[width + 0.08, height + 0.08, depth + 0.08]}>
         <meshStandardMaterial
           color="#00f3ff"
@@ -32,7 +30,6 @@ const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0
         />
       </Box>
 
-      {/* 3D Wireframe Grid Matrix Lines inside */}
       <Box args={[width - 0.05, height - 0.05, depth - 0.05]}>
         <meshStandardMaterial
           color="#38bdf8"
@@ -44,7 +41,6 @@ const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0
         />
       </Box>
 
-      {/* Diagonal 3D Hologram X-Grid Beams */}
       <Box args={[width * 1.05, 0.06, depth * 1.05]} rotation={[0, 0, Math.PI / 4]}>
         <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.0} />
       </Box>
@@ -59,7 +55,6 @@ const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0
 const HighBarrierBeam = ({ position, width = 6.5, height = 1.2, depth = 0.6 }) => {
   return (
     <group position={position}>
-      {/* 3D Thick Translucent Magenta Glass Beam Body */}
       <Box args={[width, height, depth]}>
         <meshStandardMaterial
           color="#ec4899"
@@ -71,7 +66,6 @@ const HighBarrierBeam = ({ position, width = 6.5, height = 1.2, depth = 0.6 }) =
         />
       </Box>
 
-      {/* Glowing Outer Magenta Bezel Wireframe */}
       <Box args={[width + 0.08, height + 0.08, depth + 0.08]}>
         <meshStandardMaterial
           color="#ec4899"
@@ -81,7 +75,6 @@ const HighBarrierBeam = ({ position, width = 6.5, height = 1.2, depth = 0.6 }) =
         />
       </Box>
 
-      {/* Warning Text */}
       <Text position={[0, 0, depth / 2 + 0.05]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
         ⚠️ DUCK DOWN! 🏃‍♂️
       </Text>
@@ -99,14 +92,12 @@ const CyberHighwayFloor = ({ mode }) => {
         <meshStandardMaterial color="#050811" roughness={0.5} metalness={0.9} />
       </Box>
 
-      {/* 5 Vertical Glowing Cyan Perspective Highway Lines */}
       {lineOffsets.map((x, idx) => (
         <Box key={`line_${idx}`} args={[0.08, 0.08, 15.8]} position={[x, 0.04, 0]}>
           <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
         </Box>
       ))}
 
-      {/* Cyber Arena Stadium Seating Backdrop */}
       <group position={[0, 3.0, -9.0]}>
         <Box args={[22, 8, 0.5]}>
           <meshStandardMaterial color="#090d16" roughness={0.8} />
@@ -165,6 +156,7 @@ const playSound = (type) => {
 };
 
 const CyberDodgeGame = () => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const poseLandmarkerRef = useRef(null);
   const animationRef = useRef(null);
@@ -197,6 +189,18 @@ const CyberDodgeGame = () => {
   const livesP2Ref = useRef(3);
   const playerPoseRef = useRef({ p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } });
   const xPoseRef = useRef({ startTime: 0, progress: 0 });
+
+  // Clean Exit Back to Main Menu
+  const handleBackToMain = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+    }
+    if (poseLandmarkerRef.current) {
+      try { poseLandmarkerRef.current.close(); } catch (e) {}
+    }
+    navigate('/');
+  };
 
   useEffect(() => {
     let active = true;
@@ -247,7 +251,9 @@ const CyberDodgeGame = () => {
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(t => t.stop());
       }
-      if (poseLandmarkerRef.current) poseLandmarkerRef.current.close();
+      if (poseLandmarkerRef.current) {
+        try { poseLandmarkerRef.current.close(); } catch (e) {}
+      }
     };
   }, []);
 
@@ -295,11 +301,11 @@ const CyberDodgeGame = () => {
     if (videoRef.current.readyState >= 2 && poseLandmarkerRef.current) {
       const res = poseLandmarkerRef.current.detectForVideo(videoRef.current, performance.now());
       if (res.landmarks && res.landmarks.length > 0) {
-        // X-Pose Exit Check
+        // Robust X-Pose Exit Check (Relaxed threshold: distNorm < 0.25)
         const p1Lm = res.landmarks[0];
-        if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.4 && p1Lm[16].visibility > 0.4) {
+        if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.3 && p1Lm[16].visibility > 0.3) {
           const distNorm = Math.hypot(p1Lm[15].x - p1Lm[16].x, p1Lm[15].y - p1Lm[16].y);
-          if (distNorm < 0.15 && p1Lm[15].y < 0.8 && p1Lm[16].y < 0.8) {
+          if (distNorm < 0.25) {
             if (xPoseRef.current.startTime === 0) xPoseRef.current.startTime = Date.now();
             const elapsed = Date.now() - xPoseRef.current.startTime;
             const progress = Math.min(1, elapsed / 1200);
@@ -307,7 +313,7 @@ const CyberDodgeGame = () => {
 
             if (progress >= 1) {
               xPoseRef.current = { startTime: 0, progress: 0 };
-              window.location.href = '/';
+              handleBackToMain();
               return;
             }
           } else {
@@ -352,7 +358,6 @@ const CyberDodgeGame = () => {
     }
 
     if (gameStateRef.current === 'PLAYING') {
-      // 1. Spawn Walls with Comfortable Cooldown Gap (At least 2.2 seconds distance gap!)
       const now = Date.now();
       if (now - lastSpawnTimeRef.current > 2200 && obstaclesRef.current.length < 3) {
         lastSpawnTimeRef.current = now;
@@ -374,17 +379,15 @@ const CyberDodgeGame = () => {
         obstaclesRef.current.push({
           id: Math.random(),
           type: selectedType,
-          position: [xOffset, yOffset, -12.0], // Start further back for smoother transition
-          speed: 0.08, // Comfortable playable sliding speed
+          position: [xOffset, yOffset, -12.0],
+          speed: 0.08,
           passed: false
         });
       }
 
-      // 2. Smoothly Slide Hologram Walls Forward
       obstaclesRef.current.forEach((obs) => {
-        obs.position[2] += obs.speed; // Slide forward to player at z = 1.2
+        obs.position[2] += obs.speed;
 
-        // Collision Check Window (z >= 0.7 && z <= 1.4)
         if (!obs.passed && obs.position[2] >= 0.7 && obs.position[2] <= 1.4) {
           let hitP1 = false;
           let hitP2 = false;
@@ -464,10 +467,8 @@ const CyberDodgeGame = () => {
           <pointLight position={[-8, 5, -2]} intensity={2.0} color="#ec4899" />
           <pointLight position={[8, 5, -2]} intensity={2.0} color="#eab308" />
 
-          {/* 5 Cyan Neon Lines & Arena Seating Floor */}
           <CyberHighwayFloor mode={mode} />
 
-          {/* Moving 3D Volumetric Translucent Glass Hologram Walls */}
           {obstacles.map((obs) => (
             obs.type === 'high_barrier' ? (
               <HighBarrierBeam key={obs.id} position={[obs.position[0], obs.position[1], obs.position[2]]} />
@@ -476,12 +477,10 @@ const CyberDodgeGame = () => {
             )
           ))}
 
-          {/* Player 1 Foot Energy Rings (Cyan ⭕) */}
           {feetP1.map((pos, idx) => (
             <FootEnergyRing key={`foot_p1_${idx}`} position={pos} color="#00f3ff" />
           ))}
 
-          {/* Player 2 Foot Energy Rings (Magenta ⭕) */}
           {mode === 'MULTI' && feetP2.map((pos, idx) => (
             <FootEnergyRing key={`foot_p2_${idx}`} position={pos} color="#ec4899" />
           ))}
@@ -493,11 +492,17 @@ const CyberDodgeGame = () => {
       {/* Header Overlay */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
-          <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
+          <button
+            onClick={handleBackToMain}
+            style={{
+              pointerEvents: 'auto', background: 'none', border: 'none', color: '#00d2ff',
+              fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', padding: 0
+            }}
+          >
             &larr; Back to Menu
-          </Link>
+          </button>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚡ Cyber Stage Dodge & Step AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Smooth & Comfortable Wall Sliding Speed! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Lean Left/Right & Duck Down! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (

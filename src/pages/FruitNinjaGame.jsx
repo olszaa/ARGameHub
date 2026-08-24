@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import { Link } from 'react-router-dom';
+import { HandLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import { useNavigate } from 'react-router-dom';
 
 const FRUITS = [
   { type: 'watermelon', emoji: '🍉', color: '#ef4444', name: 'Watermelon', score: 10 },
@@ -40,10 +40,23 @@ const playSound = (type) => {
 };
 
 const FruitNinjaGame = () => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const poseLandmarkerRef = useRef(null);
+  const handLandmarkerRef = useRef(null);
   const animationRef = useRef(null);
+
+  // Clean Exit Back to Main Menu
+  const handleBackToMain = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+    }
+    if (handLandmarkerRef.current) {
+      try { handLandmarkerRef.current.close(); } catch (e) {}
+    }
+    navigate('/');
+  };
 
   // Game Mode & State
   const [mode, setMode] = useState('SINGLE'); // SINGLE or MULTI
@@ -436,9 +449,15 @@ const FruitNinjaGame = () => {
 
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
-          <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
+          <button
+            onClick={handleBackToMain}
+            style={{
+              pointerEvents: 'auto', background: 'none', border: 'none', color: '#00d2ff',
+              fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', padding: 0
+            }}
+          >
             &larr; Back to Menu
-          </Link>
+          </button>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚔️ Fruit Ninja AR</h1>
           <p style={{ color: '#94a3b8', margin: 0 }}>Mode: {mode === 'SINGLE' ? '👤 1-Player' : '👥 2-Player Versus'} | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
