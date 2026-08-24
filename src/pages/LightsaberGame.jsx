@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 
-// Slash Direction Definitions
 const DIRECTIONS = [
   { id: 'UP', arrow: '⬆️', rot: 0 },
   { id: 'DOWN', arrow: '⬇️', rot: Math.PI },
@@ -13,56 +12,10 @@ const DIRECTIONS = [
   { id: 'RIGHT', arrow: '➡️', rot: -Math.PI / 2 }
 ];
 
-// 3D Directional Beat Block Component
-const BeatBlock3D = ({ color, dirArrow, position, rotation }) => {
-  const isRed = color === 'red';
-  const blockColor = isRed ? '#ef4444' : '#3b82f6';
-  const emissiveColor = isRed ? '#f87171' : '#60a5fa';
-
+// 3D Dual Lightsaber Mesh Component (Ref-forwarded for zero React re-render 60 FPS performance)
+const Lightsaber3D = forwardRef(({ color = '#ef4444', initialPos = [0, 0, 1.2] }, ref) => {
   return (
-    <group position={position} rotation={rotation}>
-      {/* 3D Main Beat Block Body */}
-      <Box args={[0.9, 0.9, 0.9]}>
-        <meshStandardMaterial
-          color={blockColor}
-          emissive={emissiveColor}
-          emissiveIntensity={1.5}
-          roughness={0.2}
-          metalness={0.4}
-        />
-      </Box>
-
-      {/* Outer Glowing Wireframe Bezel */}
-      <Box args={[0.95, 0.95, 0.95]}>
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.0} wireframe />
-      </Box>
-
-      {/* Front Face Arrow Symbol */}
-      <Text position={[0, 0, 0.48]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
-        {dirArrow}
-      </Text>
-    </group>
-  );
-};
-
-// 3D Sliced Beat Block Half Component
-const SlicedBlockHalf3D = ({ color, position, rotation, isLeft }) => {
-  const isRed = color === 'red';
-  const blockColor = isRed ? '#ef4444' : '#3b82f6';
-
-  return (
-    <group position={position} rotation={rotation}>
-      <Box args={[0.42, 0.9, 0.9]}>
-        <meshStandardMaterial color={blockColor} roughness={0.3} />
-      </Box>
-    </group>
-  );
-};
-
-// 3D Dual Lightsaber Component (Held by player hands)
-const Lightsaber3D = ({ position, color = '#ef4444' }) => {
-  return (
-    <group position={position}>
+    <group ref={ref} position={initialPos}>
       {/* Metallic Hilt Handle */}
       <Cylinder args={[0.06, 0.06, 0.4, 16]} position={[0, -0.2, 0]}>
         <meshStandardMaterial color="#64748b" metalness={0.9} roughness={0.1} />
@@ -75,9 +28,114 @@ const Lightsaber3D = ({ position, color = '#ef4444' }) => {
       <Cylinder args={[0.02, 0.02, 1.75, 16]} position={[0, 0.9, 0]}>
         <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={3.0} />
       </Cylinder>
-      {/* Tip Glow Light */}
       <pointLight position={[0, 1.8, 0]} intensity={3.0} color={color} />
     </group>
+  );
+});
+
+// 3D Moving Beat Block (Driven smoothly via Three.js useFrame without React re-renders)
+const BeatBlock3D = ({ blockData }) => {
+  const meshRef = useRef();
+
+  useFrame(() => {
+    if (meshRef.current && blockData) {
+      meshRef.current.position.set(blockData.position[0], blockData.position[1], blockData.position[2]);
+    }
+  });
+
+  const isRed = blockData.color === 'red';
+  const blockColor = isRed ? '#ef4444' : '#3b82f6';
+  const emissiveColor = isRed ? '#f87171' : '#60a5fa';
+
+  return (
+    <group ref={meshRef} position={blockData.position} rotation={[0, 0, blockData.dir.rot]}>
+      <Box args={[0.9, 0.9, 0.9]}>
+        <meshStandardMaterial
+          color={blockColor}
+          emissive={emissiveColor}
+          emissiveIntensity={1.5}
+          roughness={0.2}
+          metalness={0.4}
+        />
+      </Box>
+
+      <Box args={[0.95, 0.95, 0.95]}>
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.0} wireframe />
+      </Box>
+
+      <Text position={[0, 0, 0.48]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
+        {blockData.dir.arrow}
+      </Text>
+    </group>
+  );
+};
+
+// 3D Sliced Beat Block Half Component
+const SlicedBlockHalf3D = ({ halfData }) => {
+  const meshRef = useRef();
+
+  useFrame(() => {
+    if (meshRef.current && halfData) {
+      meshRef.current.position.set(halfData.x, halfData.y, halfData.z);
+    }
+  });
+
+  const isRed = halfData.color === 'red';
+  const blockColor = isRed ? '#ef4444' : '#3b82f6';
+
+  return (
+    <group ref={meshRef} position={[halfData.x, halfData.y, halfData.z]} rotation={[halfData.rotX, 0, 0]}>
+      <Box args={[0.42, 0.9, 0.9]}>
+        <meshStandardMaterial color={blockColor} roughness={0.3} />
+      </Box>
+    </group>
+  );
+};
+
+// High-Performance 3D Scene Controller Loop (Zero React re-render lag)
+const LightsaberSceneController = ({
+  saberP1LeftRef,
+  saberP1RightRef,
+  saberP2LeftRef,
+  saberP2RightRef,
+  mode
+}) => {
+  const p1LeftMesh = useRef();
+  const p1RightMesh = useRef();
+  const p2LeftMesh = useRef();
+  const p2RightMesh = useRef();
+
+  useFrame(() => {
+    if (p1LeftMesh.current && saberP1LeftRef.current) {
+      const p = saberP1LeftRef.current;
+      p1LeftMesh.current.position.set(p[0], p[1], p[2]);
+    }
+    if (p1RightMesh.current && saberP1RightRef.current) {
+      const p = saberP1RightRef.current;
+      p1RightMesh.current.position.set(p[0], p[1], p[2]);
+    }
+    if (p2LeftMesh.current && saberP2LeftRef.current && mode === 'MULTI') {
+      const p = saberP2LeftRef.current;
+      p2LeftMesh.current.position.set(p[0], p[1], p[2]);
+    }
+    if (p2RightMesh.current && saberP2RightRef.current && mode === 'MULTI') {
+      const p = saberP2RightRef.current;
+      p2RightMesh.current.position.set(p[0], p[1], p[2]);
+    }
+  });
+
+  return (
+    <>
+      <Lightsaber3D ref={p1LeftMesh} color="#ef4444" initialPos={[-1.2, -0.5, 1.2]} />
+      <Lightsaber3D ref={p1RightMesh} color="#3b82f6" initialPos={[1.2, -0.5, 1.2]} />
+
+      {mode === 'MULTI' && (
+        <>
+          <Lightsaber3D ref={p2LeftMesh} color="#00f3ff" initialPos={[-2.2, -0.5, 1.2]} />
+          <Lightsaber3D ref={p2RightMesh} color="#ec4899" initialPos={[2.2, -0.5, 1.2]} />
+        </>
+      )}
+    </>
   );
 };
 
@@ -89,14 +147,12 @@ const LightsaberStageFloor = () => {
         <meshStandardMaterial color="#0b0f19" roughness={0.4} metalness={0.8} />
       </Box>
 
-      {/* Glowing Highway Side Rails */}
       {[-3.5, 3.5].map((xPos, idx) => (
         <Box key={`rail_${idx}`} args={[0.12, 0.12, 15.8]} position={[xPos, 0.05, 0]}>
           <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
         </Box>
       ))}
 
-      {/* Red & Blue Center Lane Dividers */}
       <Box args={[0.08, 0.08, 15.8]} position={[-1.2, 0.04, 0]}>
         <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={3.0} />
       </Box>
@@ -124,14 +180,6 @@ const playSound = (type) => {
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
       osc.start();
       osc.stop(ctx.currentTime + 0.12);
-    } else if (type === 'miss') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.2);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
     }
   } catch (e) {}
 };
@@ -152,13 +200,9 @@ const LightsaberGame = () => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [status, setStatus] = useState('Initializing Model...');
 
-  // 3D Game Engine State
+  // 3D Game Engine Objects (State updated ONLY on spawn/delete to keep 60 FPS zero lag)
   const [blocks3D, setBlocks3D] = useState([]);
   const [halves3D, setHalves3D] = useState([]);
-  const [saberP1Left, setSaberP1Left] = useState([-1.2, -0.5, 1.2]);
-  const [saberP1Right, setSaberP1Right] = useState([1.2, -0.5, 1.2]);
-  const [saberP2Left, setSaberP2Left] = useState([-2.2, -0.5, 1.2]);
-  const [saberP2Right, setSaberP2Right] = useState([2.2, -0.5, 1.2]);
 
   // Refs
   const modeRef = useRef('SINGLE');
@@ -282,7 +326,7 @@ const LightsaberGame = () => {
     setGameState('PLAYING');
   };
 
-  // Main Motion Detection & 3D Beat Saber Engine Loop
+  // High Performance Engine Loop (No setState thrashing per frame)
   const renderGame = () => {
     if (!videoRef.current) return;
 
@@ -311,43 +355,33 @@ const LightsaberGame = () => {
 
         const sortedPoses = [...res.landmarks].sort((a, b) => (1 - a[0].x) - (1 - b[0].x));
 
-        // Player 1 Left (Red) & Right (Blue) Lightsaber Hand Tracking
+        // Player 1 Left (Red) & Right (Blue) Lightsaber Tracking
         if (sortedPoses[0]) {
           const lm1 = sortedPoses[0];
           if (lm1[15] && lm1[15].visibility > 0.3) {
-            const x3d = (0.5 - lm1[15].x) * 6.5;
-            const y3d = (0.5 - lm1[15].y) * 4.5;
-            saberP1LeftRef.current = [x3d, y3d, 1.2];
-            setSaberP1Left([x3d, y3d, 1.2]);
+            saberP1LeftRef.current = [(0.5 - lm1[15].x) * 6.5, (0.5 - lm1[15].y) * 4.5, 1.2];
           }
           if (lm1[16] && lm1[16].visibility > 0.3) {
-            const x3d = (0.5 - lm1[16].x) * 6.5;
-            const y3d = (0.5 - lm1[16].y) * 4.5;
-            saberP1RightRef.current = [x3d, y3d, 1.2];
-            setSaberP1Right([x3d, y3d, 1.2]);
+            saberP1RightRef.current = [(0.5 - lm1[16].x) * 6.5, (0.5 - lm1[16].y) * 4.5, 1.2];
           }
         }
 
-        // Player 2 Cyan & Magenta Lightsaber Hand Tracking
+        // Player 2 Lightsaber Tracking
         if (sortedPoses[1] && modeRef.current === 'MULTI') {
           const lm2 = sortedPoses[1];
           if (lm2[15] && lm2[15].visibility > 0.3) {
-            const x3d = (0.5 - lm2[15].x) * 6.5;
-            const y3d = (0.5 - lm2[15].y) * 4.5;
-            saberP2LeftRef.current = [x3d, y3d, 1.2];
-            setSaberP2Left([x3d, y3d, 1.2]);
+            saberP2LeftRef.current = [(0.5 - lm2[15].x) * 6.5, (0.5 - lm2[15].y) * 4.5, 1.2];
           }
           if (lm2[16] && lm2[16].visibility > 0.3) {
-            const x3d = (0.5 - lm2[16].x) * 6.5;
-            const y3d = (0.5 - lm2[16].y) * 4.5;
-            saberP2RightRef.current = [x3d, y3d, 1.2];
-            setSaberP2Right([x3d, y3d, 1.2]);
+            saberP2RightRef.current = [(0.5 - lm2[16].x) * 6.5, (0.5 - lm2[16].y) * 4.5, 1.2];
           }
         }
       }
     }
 
     if (gameStateRef.current === 'PLAYING') {
+      let stateChanged = false;
+
       // 1. Spawn 3D Beat Blocks
       const now = Date.now();
       if (now - lastSpawnTimeRef.current > 1800 && blocks3DRef.current.length < 5) {
@@ -365,13 +399,13 @@ const LightsaberGame = () => {
           speed: 0.12,
           hit: false
         });
+        stateChanged = true;
       }
 
-      // 2. Slide 3D Beat Blocks Forward & Check Lightsaber Slash Collision
+      // 2. Slide 3D Beat Blocks & Check Collisions
       blocks3DRef.current.forEach((block) => {
-        block.position[2] += block.speed; // Slide forward to player at z = 1.2
+        block.position[2] += block.speed;
 
-        // Lightsaber Slash Collision Check Window (z >= 0.8 && z <= 1.5)
         if (!block.hit && block.position[2] >= 0.8 && block.position[2] <= 1.5) {
           const targetSaber = block.color === 'red' ? saberP1LeftRef.current : saberP1RightRef.current;
           const distP1 = Math.hypot(targetSaber[0] - block.position[0], targetSaber[1] - block.position[1]);
@@ -401,8 +435,8 @@ const LightsaberGame = () => {
 
           if (slashed) {
             block.hit = true;
+            stateChanged = true;
 
-            // Spawn 2 Splitting 3D Block Halves
             halves3DRef.current.push({
               id: Math.random(),
               color: block.color,
@@ -421,21 +455,22 @@ const LightsaberGame = () => {
         }
       });
 
-      // Filter out passed blocks
+      const initialCount = blocks3DRef.current.length;
       blocks3DRef.current = blocks3DRef.current.filter(b => !b.hit && b.position[2] < 3.0);
-      setBlocks3D(blocks3DRef.current.map(b => ({
-        ...b,
-        position: [b.position[0], b.position[1], b.position[2]]
-      })));
+      if (blocks3DRef.current.length !== initialCount || stateChanged) {
+        setBlocks3D([...blocks3DRef.current]);
+      }
 
       // Update 3D Splitting Halves
-      halves3DRef.current.forEach((h) => {
-        h.x += h.vx;
-        h.y += h.vy;
-        h.vy -= 0.004;
-      });
-      halves3DRef.current = halves3DRef.current.filter((h) => h.y > -4.0);
-      setHalves3D(halves3DRef.current.map(h => ({ ...h })));
+      if (halves3DRef.current.length > 0) {
+        halves3DRef.current.forEach((h) => {
+          h.x += h.vx;
+          h.y += h.vy;
+          h.vy -= 0.004;
+        });
+        halves3DRef.current = halves3DRef.current.filter((h) => h.y > -4.0);
+        setHalves3D([...halves3DRef.current]);
+      }
     }
 
     animationRef.current = requestAnimationFrame(renderGame);
@@ -452,7 +487,7 @@ const LightsaberGame = () => {
       
       <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
 
-      {/* 3D Beat Saber Canvas */}
+      {/* 3D Beat Saber High-Performance Canvas */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
         <Canvas camera={{ position: [0, 2.0, 7.0], fov: 55 }}>
           <ambientLight intensity={0.9} />
@@ -460,42 +495,26 @@ const LightsaberGame = () => {
           <pointLight position={[-6, 5, -2]} intensity={2.5} color="#ef4444" />
           <pointLight position={[6, 5, -2]} intensity={2.5} color="#3b82f6" />
 
-          {/* 3D Cyber Highway Floor */}
           <LightsaberStageFloor />
 
           {/* 3D Flying Directional Beat Blocks */}
           {blocks3D.map((block) => (
-            <BeatBlock3D
-              key={block.id}
-              color={block.color}
-              dirArrow={block.dir.arrow}
-              position={[block.position[0], block.position[1], block.position[2]]}
-              rotation={[0, 0, block.dir.rot]}
-            />
+            <BeatBlock3D key={block.id} blockData={block} />
           ))}
 
           {/* 3D Sliced Block Halves */}
           {halves3D.map((h) => (
-            <SlicedBlockHalf3D
-              key={h.id}
-              color={h.color}
-              position={[h.x, h.y, h.z]}
-              rotation={[h.rotX, 0, 0]}
-              isLeft={h.isLeft}
-            />
+            <SlicedBlockHalf3D key={h.id} halfData={h} />
           ))}
 
-          {/* Player 1 3D Dual Lightsabers (🔴 Red Left / 🔵 Blue Right) */}
-          <Lightsaber3D position={saberP1Left} color="#ef4444" />
-          <Lightsaber3D position={saberP1Right} color="#3b82f6" />
-
-          {/* Player 2 3D Dual Lightsabers (Cyan Left / Magenta Right) */}
-          {mode === 'MULTI' && (
-            <>
-              <Lightsaber3D position={saberP2Left} color="#00f3ff" />
-              <Lightsaber3D position={saberP2Right} color="#ec4899" />
-            </>
-          )}
+          {/* High-Performance 3D Lightsaber Controller (Direct 60 FPS Three.js rendering) */}
+          <LightsaberSceneController
+            saberP1LeftRef={saberP1LeftRef}
+            saberP1RightRef={saberP1RightRef}
+            saberP2LeftRef={saberP2LeftRef}
+            saberP2RightRef={saberP2RightRef}
+            mode={mode}
+          />
 
           <OrbitControls enableZoom={false} enablePan={false} maxPolarAngle={Math.PI / 2} />
         </Canvas>

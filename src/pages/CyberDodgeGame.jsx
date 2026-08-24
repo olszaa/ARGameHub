@@ -1,14 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 
-// 3D Volumetric Translucent Glass Hologram Wall
-const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0.6 }) => {
+// 3D Volumetric Translucent Glass Hologram Wall (Three.js useFrame driven for zero React re-render lag)
+const HologramGridWall = ({ obsData, width = 2.4, height = 3.2, depth = 0.6 }) => {
+  const meshRef = useRef();
+
+  useFrame(() => {
+    if (meshRef.current && obsData) {
+      meshRef.current.position.set(obsData.position[0], obsData.position[1], obsData.position[2]);
+    }
+  });
+
   return (
-    <group position={position}>
+    <group ref={meshRef} position={obsData.position}>
       <Box args={[width, height, depth]}>
         <meshStandardMaterial
           color="#00f3ff"
@@ -52,9 +60,17 @@ const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0
 };
 
 // 3D Volumetric High Barrier Duck Beam
-const HighBarrierBeam = ({ position, width = 6.5, height = 1.2, depth = 0.6 }) => {
+const HighBarrierBeam = ({ obsData, width = 6.5, height = 1.2, depth = 0.6 }) => {
+  const meshRef = useRef();
+
+  useFrame(() => {
+    if (meshRef.current && obsData) {
+      meshRef.current.position.set(obsData.position[0], obsData.position[1], obsData.position[2]);
+    }
+  });
+
   return (
-    <group position={position}>
+    <group ref={meshRef} position={obsData.position}>
       <Box args={[width, height, depth]}>
         <meshStandardMaterial
           color="#ec4899"
@@ -294,14 +310,14 @@ const CyberDodgeGame = () => {
     setGameState('PLAYING');
   };
 
-  // Main Motion Detection & Balanced Wall Sliding Loop
+  // Main Motion Detection & High Performance Engine Loop
   const renderGame = () => {
     if (!videoRef.current) return;
 
     if (videoRef.current.readyState >= 2 && poseLandmarkerRef.current) {
       const res = poseLandmarkerRef.current.detectForVideo(videoRef.current, performance.now());
       if (res.landmarks && res.landmarks.length > 0) {
-        // Robust X-Pose Exit Check (Relaxed threshold: distNorm < 0.25)
+        // Robust X-Pose Exit Check
         const p1Lm = res.landmarks[0];
         if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.3 && p1Lm[16].visibility > 0.3) {
           const distNorm = Math.hypot(p1Lm[15].x - p1Lm[16].x, p1Lm[15].y - p1Lm[16].y);
@@ -358,6 +374,9 @@ const CyberDodgeGame = () => {
     }
 
     if (gameStateRef.current === 'PLAYING') {
+      let stateChanged = false;
+
+      // 1. Spawn Walls with Cooldown Gap
       const now = Date.now();
       if (now - lastSpawnTimeRef.current > 2200 && obstaclesRef.current.length < 3) {
         lastSpawnTimeRef.current = now;
@@ -383,8 +402,10 @@ const CyberDodgeGame = () => {
           speed: 0.08,
           passed: false
         });
+        stateChanged = true;
       }
 
+      // 2. Move 3D Volumetric Translucent Glass Walls Forward
       obstaclesRef.current.forEach((obs) => {
         obs.position[2] += obs.speed;
 
@@ -438,11 +459,11 @@ const CyberDodgeGame = () => {
         }
       });
 
+      const initialCount = obstaclesRef.current.length;
       obstaclesRef.current = obstaclesRef.current.filter(obs => obs.position[2] < 3.0);
-      setObstacles(obstaclesRef.current.map(obs => ({
-        ...obs,
-        position: [obs.position[0], obs.position[1], obs.position[2]]
-      })));
+      if (obstaclesRef.current.length !== initialCount || stateChanged) {
+        setObstacles([...obstaclesRef.current]);
+      }
     }
 
     animationRef.current = requestAnimationFrame(renderGame);
@@ -469,18 +490,21 @@ const CyberDodgeGame = () => {
 
           <CyberHighwayFloor mode={mode} />
 
+          {/* Moving 3D Volumetric Translucent Glass Hologram Walls */}
           {obstacles.map((obs) => (
             obs.type === 'high_barrier' ? (
-              <HighBarrierBeam key={obs.id} position={[obs.position[0], obs.position[1], obs.position[2]]} />
+              <HighBarrierBeam key={obs.id} obsData={obs} />
             ) : (
-              <HologramGridWall key={obs.id} type={obs.type} position={[obs.position[0], obs.position[1], obs.position[2]]} />
+              <HologramGridWall key={obs.id} obsData={obs} />
             )
           ))}
 
+          {/* Player 1 Foot Energy Rings (Cyan ⭕) */}
           {feetP1.map((pos, idx) => (
             <FootEnergyRing key={`foot_p1_${idx}`} position={pos} color="#00f3ff" />
           ))}
 
+          {/* Player 2 Foot Energy Rings (Magenta ⭕) */}
           {mode === 'MULTI' && feetP2.map((pos, idx) => (
             <FootEnergyRing key={`foot_p2_${idx}`} position={pos} color="#ec4899" />
           ))}
@@ -502,7 +526,7 @@ const CyberDodgeGame = () => {
             &larr; Back to Menu
           </button>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚡ Cyber Stage Dodge & Step AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Lean Left/Right & Duck Down! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>High Performance 60 FPS Engine! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
