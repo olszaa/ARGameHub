@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { HandLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { useNavigate } from 'react-router-dom';
 
 const FRUITS = [
@@ -43,7 +43,7 @@ const FruitNinjaGame = () => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const handLandmarkerRef = useRef(null);
+  const poseLandmarkerRef = useRef(null);
   const animationRef = useRef(null);
 
   // Clean Exit Back to Main Menu
@@ -52,15 +52,15 @@ const FruitNinjaGame = () => {
     if (videoRef.current?.srcObject) {
       videoRef.current.srcObject.getTracks().forEach(t => t.stop());
     }
-    if (handLandmarkerRef.current) {
-      try { handLandmarkerRef.current.close(); } catch (e) {}
+    if (poseLandmarkerRef.current) {
+      try { poseLandmarkerRef.current.close(); } catch (e) {}
     }
     navigate('/');
   };
 
   // Game Mode & State
-  const [mode, setMode] = useState('SINGLE'); // SINGLE or MULTI
-  const [gameState, setGameState] = useState('MENU'); // MENU, PLAYING, GAMEOVER
+  const [mode, setMode] = useState('SINGLE');
+  const [gameState, setGameState] = useState('MENU');
   const [scoreP1, setScoreP1] = useState(0);
   const [scoreP2, setScoreP2] = useState(0);
   const [livesP1, setLivesP1] = useState(3);
@@ -129,7 +129,9 @@ const FruitNinjaGame = () => {
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(t => t.stop());
       }
-      if (poseLandmarkerRef.current) poseLandmarkerRef.current.close();
+      if (poseLandmarkerRef.current) {
+        try { poseLandmarkerRef.current.close(); } catch (e) {}
+      }
     };
   }, []);
 
@@ -189,11 +191,11 @@ const FruitNinjaGame = () => {
     if (videoRef.current.readyState >= 2 && poseLandmarkerRef.current) {
       const res = poseLandmarkerRef.current.detectForVideo(videoRef.current, performance.now());
       if (res.landmarks && res.landmarks.length > 0) {
-        // Check X-Pose Exit Gesture
+        // Robust X-Pose Exit Check
         const p1Lm = res.landmarks[0];
-        if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.4 && p1Lm[16].visibility > 0.4) {
+        if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.3 && p1Lm[16].visibility > 0.3) {
           const distNorm = Math.hypot(p1Lm[15].x - p1Lm[16].x, p1Lm[15].y - p1Lm[16].y);
-          if (distNorm < 0.15 && p1Lm[15].y < 0.8 && p1Lm[16].y < 0.8) {
+          if (distNorm < 0.25) {
             if (xPoseRef.current.startTime === 0) xPoseRef.current.startTime = Date.now();
             const elapsed = Date.now() - xPoseRef.current.startTime;
             const progress = Math.min(1, elapsed / 1200);
@@ -201,7 +203,7 @@ const FruitNinjaGame = () => {
 
             if (progress >= 1) {
               xPoseRef.current = { startTime: 0, progress: 0 };
-              window.location.href = '/';
+              handleBackToMain();
               return;
             }
           } else {
@@ -298,12 +300,9 @@ const FruitNinjaGame = () => {
 
             if (modeRef.current === 'SINGLE' && livesP1Ref.current <= 0) {
               setGameState('GAMEOVER');
-            } else if (modeRef.current === 'MULTI' && (livesP1Ref.current <= 0 || livesP2Ref.current <= 0)) {
-              setGameState('GAMEOVER');
             }
           } else {
             playSound('slice');
-
             if (slicedByPlayer === 1) {
               scoreP1Ref.current += fruit.type.score;
               setScoreP1(scoreP1Ref.current);
@@ -312,12 +311,22 @@ const FruitNinjaGame = () => {
               setScoreP2(scoreP2Ref.current);
             }
 
-            slicedPiecesRef.current.push(
-              { emoji: fruit.type.emoji, x: fruit.x - 15, y: fruit.y, vx: fruit.vx - 4, vy: fruit.vy - 3, rot: fruit.rotation, vRot: -0.1, life: 1.0 },
-              { emoji: fruit.type.emoji, x: fruit.x + 15, y: fruit.y, vx: fruit.vx + 4, vy: fruit.vy - 3, rot: fruit.rotation, vRot: 0.1, life: 1.0 }
-            );
+            // Create Sliced Halves
+            slicedPiecesRef.current.push({
+              emoji: fruit.type.emoji,
+              x: fruit.x - 15, y: fruit.y,
+              vx: -4, vy: fruit.vy * 0.5,
+              rotation: fruit.rotation, vRot: -0.1, life: 1.0
+            });
+            slicedPiecesRef.current.push({
+              emoji: fruit.type.emoji,
+              x: fruit.x + 15, y: fruit.y,
+              vx: 4, vy: fruit.vy * 0.5,
+              rotation: fruit.rotation, vRot: 0.1, life: 1.0
+            });
 
-            for (let p = 0; p < 20; p++) {
+            // Splatter Juice Particles
+            for (let p = 0; p < 18; p++) {
               particlesRef.current.push({
                 x: fruit.x, y: fruit.y,
                 vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12,
@@ -325,99 +334,94 @@ const FruitNinjaGame = () => {
               });
             }
           }
-
-          fruitsRef.current.splice(fIdx, 1);
-        } else {
-          ctx.save();
-          ctx.translate(fruit.x, fruit.y);
-          ctx.rotate(fruit.rotation);
-          ctx.font = `${fruit.radius * 2}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(fruit.type.emoji, 0, 0);
-          ctx.restore();
+          fruit.sliced = true;
         }
       });
 
-      fruitsRef.current = fruitsRef.current.filter(f => f.y < h + 100);
+      fruitsRef.current = fruitsRef.current.filter(f => !f.sliced && f.y < h + 100);
 
-      slicedPiecesRef.current.forEach((piece, pIdx) => {
-        piece.x += piece.vx;
-        piece.y += piece.vy;
-        piece.vy += gravity;
-        piece.rot += piece.vRot;
-        piece.life -= 0.02;
-
-        if (piece.life <= 0 || piece.y > h + 100) {
-          slicedPiecesRef.current.splice(pIdx, 1);
-        } else {
-          ctx.save();
-          ctx.globalAlpha = piece.life;
-          ctx.translate(piece.x, piece.y);
-          ctx.rotate(piece.rot);
-          ctx.font = '40px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(piece.emoji, 0, 0);
-          ctx.restore();
-        }
+      // Update Sliced Pieces
+      slicedPiecesRef.current.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += gravity * 0.8;
+        p.rotation += p.vRot;
+        p.life -= 0.02;
       });
+      slicedPiecesRef.current = slicedPiecesRef.current.filter(p => p.life > 0);
 
-      particlesRef.current.forEach((p, pIdx) => {
+      // Update Juice Particles
+      particlesRef.current.forEach(p => {
         p.x += p.vx;
         p.y += p.vy;
         p.life -= 0.03;
-        if (p.life <= 0) {
-          particlesRef.current.splice(pIdx, 1);
-        } else {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
-          ctx.globalAlpha = p.life;
-          ctx.fill();
-          ctx.globalAlpha = 1.0;
-        }
       });
+      particlesRef.current = particlesRef.current.filter(p => p.life > 0);
     }
 
-    activeBlades.forEach((bItem) => {
-      const trail = bItem.trail;
-      if (trail.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(trail[0].x, trail[0].y);
-        for (let i = 1; i < trail.length; i++) {
-          ctx.lineTo(trail[i].x, trail[i].y);
-        }
-        ctx.lineWidth = 8;
-        ctx.strokeStyle = bItem.color;
-        ctx.shadowColor = bItem.color;
-        ctx.shadowBlur = 20;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      }
+    // Render Sliced Halves
+    slicedPiecesRef.current.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.globalAlpha = p.life;
+      ctx.font = '40px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.emoji, 0, 0);
+      ctx.restore();
     });
 
-    if (xPoseRef.current.progress > 0) {
+    // Render Active Fruits & Bombs
+    fruitsRef.current.forEach(f => {
       ctx.save();
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.roundRect(w / 2 - 180, 40, 360, 60, 16);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px sans-serif';
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.rotation);
+      ctx.font = `${f.radius * 1.6}px sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText(`🙅 Exiting to Menu... ${Math.round(xPoseRef.current.progress * 100)}%`, w / 2, 78);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.type.emoji, 0, 0);
       ctx.restore();
-    }
+    });
+
+    // Render Juice Particles
+    particlesRef.current.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // Render Blade Trails & Glowing Laser Slash Effects
+    activeBlades.forEach(bItem => {
+      if (bItem.trail.length < 2) return;
+
+      ctx.save();
+      ctx.strokeStyle = bItem.color;
+      ctx.shadowColor = bItem.color;
+      ctx.shadowBlur = 20;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (let i = 1; i < bItem.trail.length; i++) {
+        const pt1 = bItem.trail[i - 1];
+        const pt2 = bItem.trail[i];
+        const alpha = i / bItem.trail.length;
+
+        ctx.beginPath();
+        ctx.lineWidth = alpha * 14;
+        ctx.globalAlpha = alpha;
+        ctx.moveTo(pt1.x, pt1.y);
+        ctx.lineTo(pt2.x, pt2.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
 
     ctx.restore();
-
     animationRef.current = requestAnimationFrame(renderGame);
   };
 
@@ -447,6 +451,7 @@ const FruitNinjaGame = () => {
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
       />
 
+      {/* Header Overlay */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' }}>
         <div>
           <button
@@ -465,14 +470,14 @@ const FruitNinjaGame = () => {
         {gameState === 'PLAYING' && (
           <div style={{ display: 'flex', gap: '20px', pointerEvents: 'auto' }}>
             <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #00f3ff', color: 'white', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', color: '#00f3ff', fontWeight: 'bold' }}>PLAYER 1 (Cyan)</div>
+              <div style={{ fontSize: '0.85rem', color: '#00f3ff', fontWeight: 'bold' }}>PLAYER 1</div>
               <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP1}</div>
               <div>{'❤️'.repeat(livesP1)}{'🖤'.repeat(3 - livesP1)}</div>
             </div>
 
             {mode === 'MULTI' && (
               <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #eab308', color: 'white', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.85rem', color: '#eab308', fontWeight: 'bold' }}>PLAYER 2 (Gold)</div>
+                <div style={{ fontSize: '0.85rem', color: '#eab308', fontWeight: 'bold' }}>PLAYER 2</div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP2}</div>
                 <div>{'❤️'.repeat(livesP2)}{'🖤'.repeat(3 - livesP2)}</div>
               </div>
@@ -481,6 +486,7 @@ const FruitNinjaGame = () => {
         )}
       </div>
 
+      {/* Start / Game Over Modal */}
       {gameState !== 'PLAYING' && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh',
@@ -488,15 +494,15 @@ const FruitNinjaGame = () => {
           display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 30
         }}>
           <div style={{
-            backgroundColor: '#1e293b', padding: '3rem', borderRadius: '24px',
+            backgroundColor: '#1e293b', padding: '2.5rem', borderRadius: '24px',
             border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', maxWidth: '520px', width: '90%',
             boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
           }}>
             {gameState === 'MENU' ? (
               <>
                 <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>⚔️ Fruit Ninja AR</h2>
-                <p style={{ color: '#94a3b8', fontSize: '1.1rem', marginBottom: '2rem' }}>
-                  Select your game mode to start slicing!
+                <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                  Slash fruits with laser hand blades! Avoid slicing 💣 bombs!
                 </p>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
@@ -510,7 +516,7 @@ const FruitNinjaGame = () => {
                       boxShadow: '0 10px 25px rgba(0,243,255,0.4)'
                     }}
                   >
-                    👤 Single Player
+                    👤 1-Player Ninja
                   </button>
 
                   <button
@@ -529,24 +535,12 @@ const FruitNinjaGame = () => {
               </>
             ) : (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: '#ef4444', margin: '0 0 10px 0' }}>💥 Game Over!</h2>
+                <h2 style={{ fontSize: '2.5rem', color: '#ef4444', margin: '0 0 10px 0' }}>💣 Game Over!</h2>
                 
-                {mode === 'MULTI' ? (
-                  <div style={{ backgroundColor: '#0f172a', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem' }}>
-                    <h3 style={{ fontSize: '1.8rem', color: '#10b981', margin: '0 0 10px 0' }}>
-                      {scoreP1 > scoreP2 ? '🏆 Player 1 Wins!' : scoreP2 > scoreP1 ? '🏆 Player 2 Wins!' : '👔 It\'s a Tie!'}
-                    </h3>
-                    <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '1.2rem', color: 'white' }}>
-                      <div>P1 (Cyan): <b>{scoreP1}</b></div>
-                      <div>P2 (Gold): <b>{scoreP2}</b></div>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ backgroundColor: '#0f172a', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem' }}>
-                    <div style={{ color: '#94a3b8', fontSize: '1rem' }}>FINAL SCORE</div>
-                    <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP1}</div>
-                  </div>
-                )}
+                <div style={{ backgroundColor: '#0f172a', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '1rem' }}>FINAL SCORE</div>
+                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP1}</div>
+                </div>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
                   <button
@@ -556,7 +550,7 @@ const FruitNinjaGame = () => {
                       backgroundColor: '#00f3ff', color: '#0f172a', border: 'none', borderRadius: '12px', cursor: 'pointer'
                     }}
                   >
-                    👤 Single Player
+                    👤 Try Again
                   </button>
                   <button
                     onClick={() => startGame('MULTI')}
@@ -565,7 +559,7 @@ const FruitNinjaGame = () => {
                       backgroundColor: '#eab308', color: '#0f172a', border: 'none', borderRadius: '12px', cursor: 'pointer'
                     }}
                   >
-                    👥 2-Player Versus
+                    👥 2-Player Battle
                   </button>
                 </div>
               </>
