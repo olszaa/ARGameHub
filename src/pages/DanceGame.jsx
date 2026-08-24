@@ -83,7 +83,7 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
   }
 };
 
-// Rigged 3D Avatar Component (Positioned Standing Behind Target Step Boxes)
+// Rigged 3D Avatar Component
 const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) => {
   if (!points || points.length < 29) return null;
 
@@ -134,81 +134,91 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 2.0] }) 
   );
 };
 
-// 3D Flowing Floor Arrow Component
+// 3D Thick Extruded Flowing Floor Arrow Block
 const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
   return (
-    <group position={[xOffset, -2.33, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
-      {/* Dark Translucent Tile Base */}
-      <Box args={[0.8, 0.8, 0.05]}>
-        <meshStandardMaterial color="#0f172a" transparent opacity={0.8} />
+    <group position={[xOffset, -2.15, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* 3D Thick Base Block (Extruded Height 0.35) */}
+      <Box args={[0.85, 0.85, 0.35]}>
+        <meshStandardMaterial color="#0f172a" roughness={0.2} metalness={0.7} />
       </Box>
-      {/* Glowing Neon Border Ring */}
-      <Box args={[0.85, 0.85, 0.03]}>
-        <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={3.0} />
+      {/* 3D Thick Emissive Glowing Bezel */}
+      <Box args={[0.9, 0.9, 0.15]} position={[0, 0, 0.1]}>
+        <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={3.5} />
       </Box>
-      {/* Arrow Symbol Text */}
-      <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff" anchorX="center" anchorY="middle">
+      {/* Arrow Text Symbol */}
+      <Text position={[0, 0, 0.2]} fontSize={0.45} color="#ffffff" anchorX="center" anchorY="middle">
         {arrowData.arrow}
       </Text>
     </group>
   );
 };
 
-// 4-Lane Perspective Runway with 5 Side Line Dividers & Translucent Glass Floor
+// 3D Thick Extruded Stage Platform with Raised 3D Neon Lines & Glass Lanes
 const RunwayStageFloor = ({ mode }) => {
   const lineOffsets = [-2.4, -1.2, 0.0, 1.2, 2.4];
   const laneCenters = [-1.8, -0.6, 0.6, 1.8];
 
   return (
     <group position={[0, -2.4, -2]}>
-      {/* Background Stage Base */}
-      <Box args={[14, 0.05, 14]} position={[0, -0.05, 0]}>
-        <meshStandardMaterial color="#050811" roughness={0.4} />
+      {/* 3D Thick Stage Floor Platform Base (Height = 0.5) */}
+      <Box args={[14.5, 0.5, 14.5]} position={[0, -0.25, 0]}>
+        <meshStandardMaterial color="#0b0f19" roughness={0.2} metalness={0.9} />
       </Box>
 
       {/* SINGLE PLAYER RUNWAY */}
       {mode === 'SINGLE' ? (
         <group>
-          {/* 4 Translucent Glass Lanes */}
+          {/* 4 Thick Translucent 3D Glass Lanes (Height = 0.15) */}
           {laneCenters.map((x, idx) => (
-            <Box key={`glass_lane_${idx}`} args={[1.14, 0.04, 13.8]} position={[x, 0.02, 0]}>
-              <meshStandardMaterial color="#0f172a" transparent opacity={0.45} roughness={0.1} metalness={0.8} />
+            <Box key={`glass_lane_${idx}`} args={[1.14, 0.15, 13.8]} position={[x, 0.08, 0]}>
+              <meshStandardMaterial
+                color="#0f172a"
+                transparent
+                opacity={0.55}
+                roughness={0.1}
+                metalness={0.8}
+              />
             </Box>
           ))}
 
-          {/* 5 Vertical Glowing Cyan Side Divider Lines */}
+          {/* 5 Raised 3D Glowing Cyan Neon Divider Beams (Height = 0.25) */}
           {lineOffsets.map((x, idx) => (
-            <Box key={`line_divider_${idx}`} args={[0.08, 0.06, 13.8]} position={[x, 0.04, 0]}>
-              <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
+            <Box key={`line_divider_${idx}`} args={[0.1, 0.25, 13.8]} position={[x, 0.12, 0]}>
+              <meshStandardMaterial
+                color="#00f3ff"
+                emissive="#00f3ff"
+                emissiveIntensity={3.5}
+              />
             </Box>
           ))}
         </group>
       ) : (
         /* 2-PLAYER BATTLE TWIN RUNWAYS */
         <group>
-          {/* Player 1 Left Stage Runway */}
+          {/* Player 1 Left 3D Stage Runway */}
           <group position={[-2.5, 0, 0]}>
             {laneCenters.map((x, idx) => (
-              <Box key={`glass_lane_p1_${idx}`} args={[1.14 * 0.7, 0.04, 13.8]} position={[x * 0.7, 0.02, 0]}>
-                <meshStandardMaterial color="#0f172a" transparent opacity={0.45} roughness={0.1} />
+              <Box key={`glass_lane_p1_${idx}`} args={[1.14 * 0.7, 0.15, 13.8]} position={[x * 0.7, 0.08, 0]}>
+                <meshStandardMaterial color="#0f172a" transparent opacity={0.55} roughness={0.1} />
               </Box>
             ))}
             {lineOffsets.map((x, idx) => (
-              <Box key={`line_p1_${idx}`} args={[0.07, 0.06, 13.8]} position={[x * 0.7, 0.04, 0]}>
+              <Box key={`line_p1_${idx}`} args={[0.08, 0.25, 13.8]} position={[x * 0.7, 0.12, 0]}>
                 <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
               </Box>
             ))}
           </group>
 
-          {/* Player 2 Right Stage Runway */}
+          {/* Player 2 Right 3D Stage Runway */}
           <group position={[2.5, 0, 0]}>
             {laneCenters.map((x, idx) => (
-              <Box key={`glass_lane_p2_${idx}`} args={[1.14 * 0.7, 0.04, 13.8]} position={[x * 0.7, 0.02, 0]}>
-                <meshStandardMaterial color="#0f172a" transparent opacity={0.45} roughness={0.1} />
+              <Box key={`glass_lane_p2_${idx}`} args={[1.14 * 0.7, 0.15, 13.8]} position={[x * 0.7, 0.08, 0]}>
+                <meshStandardMaterial color="#0f172a" transparent opacity={0.55} roughness={0.1} />
               </Box>
             ))}
             {lineOffsets.map((x, idx) => (
-              <Box key={`line_p2_${idx}`} args={[0.07, 0.06, 13.8]} position={[x * 0.7, 0.04, 0]}>
+              <Box key={`line_p2_${idx}`} args={[0.08, 0.25, 13.8]} position={[x * 0.7, 0.12, 0]}>
                 <meshStandardMaterial color="#eab308" emissive="#eab308" emissiveIntensity={3.5} />
               </Box>
             ))}
@@ -216,9 +226,9 @@ const RunwayStageFloor = ({ mode }) => {
         </group>
       )}
 
-      {/* Target Line Bar */}
-      <Box args={[14, 0.08, 0.15]} position={[0, 0.05, 2.8]}>
-        <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={3.0} />
+      {/* 3D Raised Target Line Glow Bar (Height = 0.2) */}
+      <Box args={[14.2, 0.2, 0.2]} position={[0, 0.1, 2.8]}>
+        <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={3.5} />
       </Box>
     </group>
   );
@@ -258,8 +268,8 @@ const DanceGame = () => {
   const [scoreP2, setScoreP2] = useState(0);
   const [comboP1, setComboP1] = useState(0);
   const [comboP2, setComboP2] = useState(0);
-  const [activeStepP1, setActiveStepP1] = useState(null); // Active stepped pad ID for P1
-  const [activeStepP2, setActiveStepP2] = useState(null); // Active stepped pad ID for P2
+  const [activeStepP1, setActiveStepP1] = useState(null);
+  const [activeStepP2, setActiveStepP2] = useState(null);
   const [timeLeft, setTimeLeft] = useState(60);
   const [status, setStatus] = useState('Initializing Model...');
 
@@ -439,7 +449,6 @@ const DanceGame = () => {
       floor3DNotesRef.current.forEach((note, nIdx) => {
         note.z += note.speed;
 
-        // Check Foot Stepping Collision when 3D floor note reaches target box pads (z >= 0.5 && z <= 1.3)
         let isHit = false;
         if (note.z >= 0.5 && note.z <= 1.3) {
           const pFeet = playerFeet.find(pf => pf.player === note.player);
@@ -501,48 +510,48 @@ const DanceGame = () => {
           <pointLight position={[-8, 5, -2]} intensity={2.0} color="#ec4899" />
           <pointLight position={[8, 5, -2]} intensity={2.0} color="#eab308" />
 
-          {/* Runway Floor with 5 Side Line Dividers & Translucent Glass Lanes */}
+          {/* 3D Extruded Stage Platform with Raised Neon Divider Beams */}
           <RunwayStageFloor mode={mode} />
 
-          {/* Player 1 3D Target Step Pads (In front of Avatar at z = 0.8) */}
+          {/* Player 1 3D Thick Step Box Slabs (Extruded Height 0.3) */}
           {ARROWS.map((arr) => {
             const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset * 0.7 : arr.xOffset;
             const isStepped = activeStepP1 === arr.id;
             return (
-              <group key={`pad_p1_${arr.id}`} position={[xPos, -2.33, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[0.8, 0.8, 0.05]}>
-                  <meshStandardMaterial color={isStepped ? arr.color : "#0f172a"} roughness={0.2} />
+              <group key={`pad_p1_${arr.id}`} position={[xPos, -2.15, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
+                <Box args={[0.85, 0.85, 0.3]}>
+                  <meshStandardMaterial color={isStepped ? arr.color : "#0f172a"} roughness={0.2} metalness={0.8} />
                 </Box>
-                <Box args={[0.88, 0.88, 0.03]}>
+                <Box args={[0.9, 0.9, 0.12]} position={[0, 0, 0.1]}>
                   <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={isStepped ? 5.0 : 3.0} />
                 </Box>
-                <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff">
+                <Text position={[0, 0, 0.18]} fontSize={0.45} color="#ffffff">
                   {arr.arrow}
                 </Text>
               </group>
             );
           })}
 
-          {/* Player 2 3D Target Step Pads (Multiplayer) */}
+          {/* Player 2 3D Thick Step Box Slabs */}
           {mode === 'MULTI' && ARROWS.map((arr) => {
             const xPos = 2.5 + arr.xOffset * 0.7;
             const isStepped = activeStepP2 === arr.id;
             return (
-              <group key={`pad_p2_${arr.id}`} position={[xPos, -2.33, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[0.8, 0.8, 0.05]}>
-                  <meshStandardMaterial color={isStepped ? arr.color : "#0f172a"} roughness={0.2} />
+              <group key={`pad_p2_${arr.id}`} position={[xPos, -2.15, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
+                <Box args={[0.85, 0.85, 0.3]}>
+                  <meshStandardMaterial color={isStepped ? arr.color : "#0f172a"} roughness={0.2} metalness={0.8} />
                 </Box>
-                <Box args={[0.88, 0.88, 0.03]}>
+                <Box args={[0.9, 0.9, 0.12]} position={[0, 0, 0.1]}>
                   <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={isStepped ? 5.0 : 3.0} />
                 </Box>
-                <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff">
+                <Text position={[0, 0, 0.18]} fontSize={0.45} color="#ffffff">
                   {arr.arrow}
                 </Text>
               </group>
             );
           })}
 
-          {/* 3D Flowing Floor Arrows inside Translucent Lanes */}
+          {/* 3D Thick Extruded Flowing Floor Arrows */}
           {floor3DNotes.map((note) => (
             <FloorFlowing3DArrow
               key={note.id}
@@ -552,7 +561,7 @@ const DanceGame = () => {
             />
           ))}
 
-          {/* Player 1 3D Avatar Standing BEHIND the Target Pads at z = 2.0 */}
+          {/* Player 1 3D Avatar Standing BEHIND the Step Boxes */}
           {p1Landmarks && (
             <Rigged3DAvatar
               points={p1Landmarks}
@@ -561,7 +570,7 @@ const DanceGame = () => {
             />
           )}
 
-          {/* Player 2 3D Avatar Standing BEHIND the Target Pads at z = 2.0 */}
+          {/* Player 2 3D Avatar */}
           {p2Landmarks && mode === 'MULTI' && (
             <Rigged3DAvatar
               points={p2Landmarks}
@@ -581,7 +590,7 @@ const DanceGame = () => {
             &larr; Back to Menu
           </Link>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Glass Runway Dance AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Avatar stands behind step boxes! | Step feet 🦶 on floor arrows! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Thick 3D Extruded Stage Platform & Raised 3D Beams! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -624,7 +633,7 @@ const DanceGame = () => {
               <>
                 <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Glass Runway Dance AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Your 3D Avatar stands behind step boxes. Step your feet 🦶 onto floor arrows in sync with rhythm!
+                  Thick 3D Extruded Stage Platform & Raised 3D Neon Beams!
                 </p>
 
                 {/* Avatar Selection Picker */}
