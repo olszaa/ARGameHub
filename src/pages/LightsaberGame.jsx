@@ -5,35 +5,25 @@ import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 
+// 6 Slash Directions (Including Wide Side Slashes ⬅️ ➡️)
 const DIRECTIONS = [
   { id: 'UP', arrow: '⬆️', rot: 0 },
   { id: 'DOWN', arrow: '⬇️', rot: Math.PI },
   { id: 'LEFT', arrow: '⬅️', rot: Math.PI / 2 },
-  { id: 'RIGHT', arrow: '➡️', rot: -Math.PI / 2 }
+  { id: 'RIGHT', arrow: '➡️', rot: -Math.PI / 2 },
+  { id: 'SIDE_LEFT', arrow: '◀️', rot: Math.PI / 2, isSide: true },
+  { id: 'SIDE_RIGHT', arrow: '▶️', rot: -Math.PI / 2, isSide: true }
 ];
 
-// 3D Dual Lightsaber Mesh Component (Ref-forwarded for zero React re-render 60 FPS performance)
-const Lightsaber3D = forwardRef(({ color = '#ef4444', initialPos = [0, 0, 1.2] }, ref) => {
-  return (
-    <group ref={ref} position={initialPos}>
-      {/* Metallic Hilt Handle */}
-      <Cylinder args={[0.06, 0.06, 0.4, 16]} position={[0, -0.2, 0]}>
-        <meshStandardMaterial color="#64748b" metalness={0.9} roughness={0.1} />
-      </Cylinder>
-      {/* Glowing Energy Plasma Blade */}
-      <Cylinder args={[0.05, 0.05, 1.8, 16]} position={[0, 0.9, 0]}>
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={4.0} transparent opacity={0.9} />
-      </Cylinder>
-      {/* Core Plasma White Core */}
-      <Cylinder args={[0.02, 0.02, 1.75, 16]} position={[0, 0.9, 0]}>
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={3.0} />
-      </Cylinder>
-      <pointLight position={[0, 1.8, 0]} intensity={3.0} color={color} />
-    </group>
-  );
-});
+// 4 Beat Lanes (Outer Side Lanes & Center Lanes)
+const LANES = [
+  { id: 'OUTER_LEFT', x: -2.8, color: 'red' },
+  { id: 'INNER_LEFT', x: -1.0, color: 'red' },
+  { id: 'INNER_RIGHT', x: 1.0, color: 'blue' },
+  { id: 'OUTER_RIGHT', x: 2.8, color: 'blue' }
+];
 
-// 3D Moving Beat Block (Driven smoothly via Three.js useFrame without React re-renders)
+// 3D Directional Beat Block Component
 const BeatBlock3D = ({ blockData }) => {
   const meshRef = useRef();
 
@@ -49,20 +39,23 @@ const BeatBlock3D = ({ blockData }) => {
 
   return (
     <group ref={meshRef} position={blockData.position} rotation={[0, 0, blockData.dir.rot]}>
+      {/* 3D Main Beat Block Body */}
       <Box args={[0.9, 0.9, 0.9]}>
         <meshStandardMaterial
           color={blockColor}
           emissive={emissiveColor}
-          emissiveIntensity={1.5}
+          emissiveIntensity={1.8}
           roughness={0.2}
           metalness={0.4}
         />
       </Box>
 
+      {/* Outer Glowing Wireframe Bezel */}
       <Box args={[0.95, 0.95, 0.95]}>
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.0} wireframe />
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.5} wireframe />
       </Box>
 
+      {/* Front Face Directional Arrow */}
       <Text position={[0, 0, 0.48]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
         {blockData.dir.arrow}
       </Text>
@@ -92,7 +85,28 @@ const SlicedBlockHalf3D = ({ halfData }) => {
   );
 };
 
-// High-Performance 3D Scene Controller Loop (Zero React re-render lag)
+// 3D Dual Lightsaber Mesh Component
+const Lightsaber3D = forwardRef(({ color = '#ef4444', initialPos = [0, 0, 1.2] }, ref) => {
+  return (
+    <group ref={ref} position={initialPos}>
+      {/* Metallic Hilt Handle */}
+      <Cylinder args={[0.06, 0.06, 0.4, 16]} position={[0, -0.2, 0]}>
+        <meshStandardMaterial color="#64748b" metalness={0.9} roughness={0.1} />
+      </Cylinder>
+      {/* Glowing Energy Plasma Blade */}
+      <Cylinder args={[0.05, 0.05, 1.9, 16]} position={[0, 0.95, 0]}>
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={4.5} transparent opacity={0.9} />
+      </Cylinder>
+      {/* Core Plasma White Core */}
+      <Cylinder args={[0.02, 0.02, 1.85, 16]} position={[0, 0.95, 0]}>
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={3.5} />
+      </Cylinder>
+      <pointLight position={[0, 1.9, 0]} intensity={3.5} color={color} />
+    </group>
+  );
+});
+
+// High-Performance 3D Lightsaber Controller
 const LightsaberSceneController = ({
   saberP1LeftRef,
   saberP1RightRef,
@@ -139,26 +153,26 @@ const LightsaberSceneController = ({
   );
 };
 
-// 3D Cyber Stage Floor
+// 4-Lane Wide 3D Cyber Stage Floor
 const LightsaberStageFloor = () => {
+  const lineOffsets = [-3.8, -1.9, 0.0, 1.9, 3.8];
+
   return (
     <group position={[0, -2.2, -2]}>
-      <Box args={[14, 0.1, 16]} position={[0, -0.05, 0]}>
+      <Box args={[16, 0.1, 16]} position={[0, -0.05, 0]}>
         <meshStandardMaterial color="#0b0f19" roughness={0.4} metalness={0.8} />
       </Box>
 
-      {[-3.5, 3.5].map((xPos, idx) => (
-        <Box key={`rail_${idx}`} args={[0.12, 0.12, 15.8]} position={[xPos, 0.05, 0]}>
-          <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
+      {/* 5 Neon Highway Lanes Dividers (Supporting Center & Side Slashes) */}
+      {lineOffsets.map((xPos, idx) => (
+        <Box key={`rail_${idx}`} args={[0.08, 0.08, 15.8]} position={[xPos, 0.04, 0]}>
+          <meshStandardMaterial
+            color={idx < 2 ? '#ef4444' : idx > 2 ? '#3b82f6' : '#00f3ff'}
+            emissive={idx < 2 ? '#ef4444' : idx > 2 ? '#3b82f6' : '#00f3ff'}
+            emissiveIntensity={3.5}
+          />
         </Box>
       ))}
-
-      <Box args={[0.08, 0.08, 15.8]} position={[-1.2, 0.04, 0]}>
-        <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={3.0} />
-      </Box>
-      <Box args={[0.08, 0.08, 15.8]} position={[1.2, 0.04, 0]}>
-        <meshStandardMaterial color="#3b82f6" emissive="#3b82f6" emissiveIntensity={3.0} />
-      </Box>
     </group>
   );
 };
@@ -200,7 +214,7 @@ const LightsaberGame = () => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [status, setStatus] = useState('Initializing Model...');
 
-  // 3D Game Engine Objects (State updated ONLY on spawn/delete to keep 60 FPS zero lag)
+  // 3D Game Engine State
   const [blocks3D, setBlocks3D] = useState([]);
   const [halves3D, setHalves3D] = useState([]);
 
@@ -326,7 +340,7 @@ const LightsaberGame = () => {
     setGameState('PLAYING');
   };
 
-  // High Performance Engine Loop (No setState thrashing per frame)
+  // High Performance Engine Loop
   const renderGame = () => {
     if (!videoRef.current) return;
 
@@ -355,14 +369,14 @@ const LightsaberGame = () => {
 
         const sortedPoses = [...res.landmarks].sort((a, b) => (1 - a[0].x) - (1 - b[0].x));
 
-        // Player 1 Left (Red) & Right (Blue) Lightsaber Tracking
+        // Player 1 Left (Red) & Right (Blue) Lightsaber Wide Range Tracking
         if (sortedPoses[0]) {
           const lm1 = sortedPoses[0];
           if (lm1[15] && lm1[15].visibility > 0.3) {
-            saberP1LeftRef.current = [(0.5 - lm1[15].x) * 6.5, (0.5 - lm1[15].y) * 4.5, 1.2];
+            saberP1LeftRef.current = [(0.5 - lm1[15].x) * 7.5, (0.5 - lm1[15].y) * 5.0, 1.2];
           }
           if (lm1[16] && lm1[16].visibility > 0.3) {
-            saberP1RightRef.current = [(0.5 - lm1[16].x) * 6.5, (0.5 - lm1[16].y) * 4.5, 1.2];
+            saberP1RightRef.current = [(0.5 - lm1[16].x) * 7.5, (0.5 - lm1[16].y) * 5.0, 1.2];
           }
         }
 
@@ -370,10 +384,10 @@ const LightsaberGame = () => {
         if (sortedPoses[1] && modeRef.current === 'MULTI') {
           const lm2 = sortedPoses[1];
           if (lm2[15] && lm2[15].visibility > 0.3) {
-            saberP2LeftRef.current = [(0.5 - lm2[15].x) * 6.5, (0.5 - lm2[15].y) * 4.5, 1.2];
+            saberP2LeftRef.current = [(0.5 - lm2[15].x) * 7.5, (0.5 - lm2[15].y) * 5.0, 1.2];
           }
           if (lm2[16] && lm2[16].visibility > 0.3) {
-            saberP2RightRef.current = [(0.5 - lm2[16].x) * 6.5, (0.5 - lm2[16].y) * 4.5, 1.2];
+            saberP2RightRef.current = [(0.5 - lm2[16].x) * 7.5, (0.5 - lm2[16].y) * 5.0, 1.2];
           }
         }
       }
@@ -382,27 +396,26 @@ const LightsaberGame = () => {
     if (gameStateRef.current === 'PLAYING') {
       let stateChanged = false;
 
-      // 1. Spawn 3D Beat Blocks
+      // 1. Spawn 3D Beat Blocks across 4 Lanes (Including Outer Side Slashes)
       const now = Date.now();
-      if (now - lastSpawnTimeRef.current > 1800 && blocks3DRef.current.length < 5) {
+      if (now - lastSpawnTimeRef.current > 1500 && blocks3DRef.current.length < 6) {
         lastSpawnTimeRef.current = now;
 
-        const isRed = Math.random() < 0.5;
+        const selectedLane = LANES[Math.floor(Math.random() * LANES.length)];
         const selectedDir = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
-        const xOffset = isRed ? -1.2 : 1.2;
 
         blocks3DRef.current.push({
           id: Math.random(),
-          color: isRed ? 'red' : 'blue',
+          color: selectedLane.color,
           dir: selectedDir,
-          position: [xOffset, -0.4, -12.0],
+          position: [selectedLane.x, -0.4, -12.0],
           speed: 0.12,
           hit: false
         });
         stateChanged = true;
       }
 
-      // 2. Slide 3D Beat Blocks & Check Collisions
+      // 2. Slide 3D Beat Blocks & Check Lightsaber Slash Collision
       blocks3DRef.current.forEach((block) => {
         block.position[2] += block.speed;
 
@@ -411,7 +424,7 @@ const LightsaberGame = () => {
           const distP1 = Math.hypot(targetSaber[0] - block.position[0], targetSaber[1] - block.position[1]);
 
           let slashed = false;
-          if (distP1 < 0.95) {
+          if (distP1 < 1.1) { // Wide side slash hit radius
             slashed = true;
             scoreP1Ref.current += 100;
             comboP1Ref.current += 1;
@@ -423,7 +436,7 @@ const LightsaberGame = () => {
           if (modeRef.current === 'MULTI' && !slashed) {
             const targetSaberP2 = block.color === 'red' ? saberP2LeftRef.current : saberP2RightRef.current;
             const distP2 = Math.hypot(targetSaberP2[0] - block.position[0], targetSaberP2[1] - block.position[1]);
-            if (distP2 < 0.95) {
+            if (distP2 < 1.1) {
               slashed = true;
               scoreP2Ref.current += 100;
               comboP2Ref.current += 1;
@@ -461,7 +474,6 @@ const LightsaberGame = () => {
         setBlocks3D([...blocks3DRef.current]);
       }
 
-      // Update 3D Splitting Halves
       if (halves3DRef.current.length > 0) {
         halves3DRef.current.forEach((h) => {
           h.x += h.vx;
@@ -489,15 +501,16 @@ const LightsaberGame = () => {
 
       {/* 3D Beat Saber High-Performance Canvas */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
-        <Canvas camera={{ position: [0, 2.0, 7.0], fov: 55 }}>
+        <Canvas camera={{ position: [0, 2.0, 7.5], fov: 55 }}>
           <ambientLight intensity={0.9} />
           <pointLight position={[0, 10, 5]} intensity={2.5} color="#00f3ff" />
           <pointLight position={[-6, 5, -2]} intensity={2.5} color="#ef4444" />
           <pointLight position={[6, 5, -2]} intensity={2.5} color="#3b82f6" />
 
+          {/* 4-Lane Wide 3D Stage Floor */}
           <LightsaberStageFloor />
 
-          {/* 3D Flying Directional Beat Blocks */}
+          {/* 3D Flying Directional Beat Blocks (Center & Side Slashes) */}
           {blocks3D.map((block) => (
             <BeatBlock3D key={block.id} blockData={block} />
           ))}
@@ -507,7 +520,7 @@ const LightsaberGame = () => {
             <SlicedBlockHalf3D key={h.id} halfData={h} />
           ))}
 
-          {/* High-Performance 3D Lightsaber Controller (Direct 60 FPS Three.js rendering) */}
+          {/* High-Performance 3D Lightsaber Controller */}
           <LightsaberSceneController
             saberP1LeftRef={saberP1LeftRef}
             saberP1RightRef={saberP1RightRef}
@@ -533,7 +546,7 @@ const LightsaberGame = () => {
             &larr; Back to Menu
           </button>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚔️ 3D Beat Saber AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>🔴 Left Red Saber | 🔵 Right Blue Saber! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>4-Lane Wide & Side Slashes! | 🔴 Left Red | 🔵 Right Blue | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -576,7 +589,7 @@ const LightsaberGame = () => {
               <>
                 <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>⚔️ 3D Beat Saber AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Slash incoming 3D directional beat blocks with 🔴 Left Red Saber & 🔵 Right Blue Saber!
+                  Slash 3D beat blocks coming from 4 lanes including wide side slashes ◀️ ▶️!
                 </p>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
