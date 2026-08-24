@@ -5,56 +5,84 @@ import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Link } from 'react-router-dom';
 
-// Hologram Grid Wall Mesh Component
-const HologramGridWall = ({ type, position, width = 2.4, height = 3.2 }) => {
+// 3D Volumetric Translucent Glass Hologram Wall (Matching user screenshot)
+const HologramGridWall = ({ type, position, width = 2.4, height = 3.2, depth = 0.6 }) => {
   return (
     <group position={position}>
-      {/* Outer Cyan Glowing Bezel */}
-      <Box args={[width, height, 0.15]}>
-        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.0} />
-      </Box>
-
-      {/* Hologram Wireframe Grid Inside */}
-      <Box args={[width - 0.1, height - 0.1, 0.08]}>
+      {/* 3D Thick Translucent Cyan Glass Main Cuboid Body */}
+      <Box args={[width, height, depth]}>
         <meshStandardMaterial
           color="#00f3ff"
           emissive="#00f3ff"
-          emissiveIntensity={1.5}
-          wireframe
+          emissiveIntensity={1.2}
           transparent
-          opacity={0.65}
+          opacity={0.45}
+          roughness={0.1}
+          metalness={0.8}
         />
       </Box>
 
-      {/* Semi-transparent Cyan Tint Panel */}
-      <Box args={[width - 0.1, height - 0.1, 0.05]}>
-        <meshStandardMaterial color="#0891b2" transparent opacity={0.3} roughness={0.1} />
+      {/* 3D Glowing Cyan Outer Bezel Frame */}
+      <Box args={[width + 0.08, height + 0.08, depth + 0.08]}>
+        <meshStandardMaterial
+          color="#00f3ff"
+          emissive="#00f3ff"
+          emissiveIntensity={3.0}
+          wireframe
+        />
       </Box>
 
-      {/* Diagonal X-Cross Grid Lines inside */}
-      <Box args={[width * 1.1, 0.05, 0.05]} rotation={[0, 0, Math.PI / 4]}>
-        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={2.5} />
+      {/* 3D Wireframe Grid Matrix Lines inside */}
+      <Box args={[width - 0.05, height - 0.05, depth - 0.05]}>
+        <meshStandardMaterial
+          color="#38bdf8"
+          emissive="#38bdf8"
+          emissiveIntensity={2.0}
+          wireframe
+          transparent
+          opacity={0.6}
+        />
       </Box>
-      <Box args={[width * 1.1, 0.05, 0.05]} rotation={[0, 0, -Math.PI / 4]}>
-        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={2.5} />
+
+      {/* Diagonal 3D Hologram X-Grid Beams */}
+      <Box args={[width * 1.05, 0.06, depth * 1.05]} rotation={[0, 0, Math.PI / 4]}>
+        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.0} />
+      </Box>
+      <Box args={[width * 1.05, 0.06, depth * 1.05]} rotation={[0, 0, -Math.PI / 4]}>
+        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.0} />
       </Box>
     </group>
   );
 };
 
-// High Barrier Duck Beam (Player must duck/squat down)
-const HighBarrierBeam = ({ position }) => {
+// 3D Volumetric High Barrier Duck Beam
+const HighBarrierBeam = ({ position, width = 6.5, height = 1.2, depth = 0.6 }) => {
   return (
     <group position={position}>
-      {/* Horizontal High Barrier Magenta Beam */}
-      <Box args={[6.5, 1.2, 0.2]}>
-        <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={3.5} />
+      {/* 3D Thick Translucent Magenta Glass Beam Body */}
+      <Box args={[width, height, depth]}>
+        <meshStandardMaterial
+          color="#ec4899"
+          emissive="#ec4899"
+          emissiveIntensity={1.5}
+          transparent
+          opacity={0.5}
+          roughness={0.1}
+        />
       </Box>
-      <Box args={[6.4, 1.1, 0.1]}>
-        <meshStandardMaterial color="#f472b6" emissive="#f472b6" emissiveIntensity={2.0} wireframe />
+
+      {/* Glowing Outer Magenta Bezel Wireframe */}
+      <Box args={[width + 0.08, height + 0.08, depth + 0.08]}>
+        <meshStandardMaterial
+          color="#ec4899"
+          emissive="#ec4899"
+          emissiveIntensity={3.5}
+          wireframe
+        />
       </Box>
+
       {/* Warning Text */}
-      <Text position={[0, 0, 0.15]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
+      <Text position={[0, 0, depth / 2 + 0.05]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
         ⚠️ DUCK DOWN! 🏃‍♂️
       </Text>
     </group>
@@ -348,7 +376,7 @@ const CyberDodgeGame = () => {
         });
       }
 
-      // 2. Move & Slide Hologram Walls Forward continuously
+      // 2. Move 3D Volumetric Translucent Glass Walls Forward continuously
       obstaclesRef.current.forEach((obs) => {
         obs.position[2] += obs.speed; // Slide forward to player at z = 1.2
 
@@ -435,7 +463,7 @@ const CyberDodgeGame = () => {
           {/* 5 Cyan Neon Lines & Arena Seating Floor */}
           <CyberHighwayFloor mode={mode} />
 
-          {/* Moving 3D Hologram Grid Walls & High Beams */}
+          {/* Moving 3D Volumetric Translucent Glass Hologram Walls */}
           {obstacles.map((obs) => (
             obs.type === 'high_barrier' ? (
               <HighBarrierBeam key={obs.id} position={[obs.position[0], obs.position[1], obs.position[2]]} />
@@ -465,7 +493,7 @@ const CyberDodgeGame = () => {
             &larr; Back to Menu
           </Link>
           <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚡ Cyber Stage Dodge & Step AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Lean Left/Right & Duck Down under Hologram Walls! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <p style={{ color: '#94a3b8', margin: 0 }}>3D Volumetric Translucent Glass Walls! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -508,7 +536,7 @@ const CyberDodgeGame = () => {
               <>
                 <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>⚡ Cyber Stage Dodge & Step AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Stand on the 5 cyan neon cyber lanes! Lean left/right and duck down under incoming 3D hologram walls!
+                  Stand on the 5 cyan neon cyber lanes! Dodge 3D volumetric translucent glass walls!
                 </p>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
