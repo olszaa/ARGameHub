@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { Box, Sphere, Cylinder, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Link } from 'react-router-dom';
@@ -46,7 +46,7 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
           <meshStandardMaterial color={armorColor} metalness={0.8} roughness={0.2} />
         </Box>
         <Box args={[1.5, 0.35, 0.2]} position={[0, 0.1, 0.95]}>
-          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.0} />
+          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.5} />
         </Box>
       </group>
     );
@@ -57,7 +57,7 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
           <meshStandardMaterial color={armorColor} metalness={0.3} roughness={0.5} />
         </Box>
         <Box args={[1.8, 0.5, 0.3]} position={[0, 0.2, 0.8]}>
-          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.5} />
+          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.8} />
         </Box>
       </group>
     );
@@ -68,7 +68,7 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
           <meshStandardMaterial color={armorColor} metalness={0.9} roughness={0.1} />
         </Box>
         <Sphere args={[0.25, 12, 12]} position={[0, 1.4, 0]}>
-          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.0} />
+          <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={2.5} />
         </Sphere>
       </group>
     );
@@ -83,7 +83,7 @@ const HeadPreset = ({ preset, skinColor, armorColor, hairColor, accentColor }) =
   }
 };
 
-// Rigged 3D Avatar
+// Rigged 3D Avatar Component
 const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 0] }) => {
   if (!points || points.length < 29) return null;
 
@@ -134,18 +134,79 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 0] }) =>
   );
 };
 
-// 3D Flowing Floor Arrow Component (Sliding along the 3D floor surface)
-const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
+// 3D Flowing Floor Arrow Component (With vibrant colors & neon borders)
+const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos, pColor }) => {
   return (
-    <group position={[xOffset, -2.35, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
-      {/* Outer 3D Floor Tile */}
-      <Box args={[0.9, 0.9, 0.08]}>
-        <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={1.2} />
+    <group position={[xOffset, -2.34, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Dark Base Tile */}
+      <Box args={[0.8, 0.8, 0.06]}>
+        <meshStandardMaterial color="#0f172a" roughness={0.2} />
+      </Box>
+      {/* Vibrant Neon Emissive Border */}
+      <Box args={[0.85, 0.85, 0.04]}>
+        <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={2.5} />
       </Box>
       {/* Arrow Symbol Text */}
-      <Text position={[0, 0, 0.06]} fontSize={0.5} color="#ffffff" anchorX="center" anchorY="middle">
+      <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff" anchorX="center" anchorY="middle">
         {arrowData.arrow}
       </Text>
+    </group>
+  );
+};
+
+// Cyber Stage Floor Lines & Neon Tracks
+const CyberStageFloor = ({ mode }) => {
+  return (
+    <group position={[0, -2.4, -2]}>
+      {/* Main Dark Metallic Stage Floor */}
+      <Box args={[14, 0.1, 14]}>
+        <meshStandardMaterial color="#0b0f19" roughness={0.1} metalness={0.9} />
+      </Box>
+
+      {/* Stage Glowing Neon Border Beams */}
+      <Box args={[14.2, 0.15, 0.2]} position={[0, 0.05, 7]}>
+        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={2.5} />
+      </Box>
+      <Box args={[14.2, 0.15, 0.2]} position={[0, 0.05, -7]}>
+        <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={2.5} />
+      </Box>
+      <Box args={[0.2, 0.15, 14]} position={[-7.1, 0.05, 0]}>
+        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={2.5} />
+      </Box>
+      <Box args={[0.2, 0.15, 14]} position={[7.1, 0.05, 0]}>
+        <meshStandardMaterial color="#eab308" emissive="#eab308" emissiveIntensity={2.5} />
+      </Box>
+
+      {/* Center Divider Line (Multiplayer Split) */}
+      {mode === 'MULTI' && (
+        <Box args={[0.15, 0.12, 14]} position={[0, 0.06, 0]}>
+          <meshStandardMaterial color="#a855f7" emissive="#a855f7" emissiveIntensity={3.0} />
+        </Box>
+      )}
+
+      {/* Glowing Neon Lane Lines (4 Lanes per player) */}
+      {mode === 'SINGLE' ? (
+        ARROWS.map((arr) => (
+          <Box key={`lane_single_${arr.id}`} args={[0.06, 0.08, 13.8]} position={[arr.xOffset, 0.06, 0]}>
+            <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={1.8} />
+          </Box>
+        ))
+      ) : (
+        <>
+          {/* Player 1 Left Stage Lanes (Cyan) */}
+          {ARROWS.map((arr) => (
+            <Box key={`lane_p1_${arr.id}`} args={[0.06, 0.08, 13.8]} position={[-2.5 + arr.xOffset * 0.7, 0.06, 0]}>
+              <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={1.8} />
+            </Box>
+          ))}
+          {/* Player 2 Right Stage Lanes (Gold) */}
+          {ARROWS.map((arr) => (
+            <Box key={`lane_p2_${arr.id}`} args={[0.06, 0.08, 13.8]} position={[2.5 + arr.xOffset * 0.7, 0.06, 0]}>
+              <meshStandardMaterial color="#eab308" emissive="#eab308" emissiveIntensity={1.8} />
+            </Box>
+          ))}
+        </>
+      )}
     </group>
   );
 };
@@ -191,7 +252,7 @@ const DanceGame = () => {
   const [p1Landmarks, setP1Landmarks] = useState(null);
   const [p2Landmarks, setP2Landmarks] = useState(null);
 
-  // 3D Floor Flowing Arrows State: [{ id, arrow, player, xOffset, z: -8.0 -> +1.5 }]
+  // 3D Flowing Floor Arrows State
   const [floor3DNotes, setFloor3DNotes] = useState([]);
 
   // Refs
@@ -341,7 +402,6 @@ const DanceGame = () => {
     }
 
     if (gameState === 'PLAYING') {
-      // 1. Spawn 3D Flowing Floor Arrows (Flowing along 3D Floor Surface from z = -8.0 to z = +1.2)
       if (Math.random() < (modeRef.current === 'MULTI' ? 0.07 : 0.05) && floor3DNotesRef.current.length < 8) {
         const arrow = ARROWS[Math.floor(Math.random() * ARROWS.length)];
         const targetPlayer = modeRef.current === 'MULTI' ? (Math.random() < 0.5 ? 1 : 2) : 1;
@@ -358,11 +418,9 @@ const DanceGame = () => {
         });
       }
 
-      // 2. Update 3D Flowing Notes
       floor3DNotesRef.current.forEach((note, nIdx) => {
-        note.z += note.speed; // Flow forward along the 3D floor
+        note.z += note.speed;
 
-        // Check Foot Stepping Collision when 3D floor note reaches avatar's feet pad (z >= 0.8 && z <= 1.4)
         let isHit = false;
         if (note.z >= 0.7 && note.z <= 1.4) {
           const pFeet = playerFeet.find(pf => pf.player === note.player);
@@ -393,7 +451,6 @@ const DanceGame = () => {
         }
       });
 
-      // Filter passed 3D floor notes
       floor3DNotesRef.current = floor3DNotesRef.current.filter(n => n.z < 2.0);
       setFloor3DNotes([...floor3DNotesRef.current]);
     }
@@ -408,59 +465,67 @@ const DanceGame = () => {
   }, [status, gameState]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', backgroundColor: '#0f172a', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', backgroundColor: '#090d16', overflow: 'hidden' }}>
       
-      {/* Hidden Video for Pose Tracking */}
       <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
 
-      {/* 3D Stage & Floor Flowing Arrows Canvas */}
+      {/* 3D Cyber Stage Canvas */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
-        <Canvas camera={{ position: [0, 2, 7.5], fov: 55 }}>
-          <ambientLight intensity={0.8} />
-          <pointLight position={[10, 10, 10]} intensity={1.8} />
-          
-          {/* 3D Flowing Floor Stage Track */}
-          <Box args={[12, 0.1, 14]} position={[0, -2.4, -2]}>
-            <meshStandardMaterial color="#1e1b4b" metalness={0.8} roughness={0.2} />
-          </Box>
+        <Canvas camera={{ position: [0, 2.2, 7.5], fov: 55 }}>
+          <ambientLight intensity={0.9} />
+          <pointLight position={[0, 10, 5]} intensity={2.5} color="#00f3ff" />
+          <pointLight position={[-8, 5, -2]} intensity={2.0} color="#ec4899" />
+          <pointLight position={[8, 5, -2]} intensity={2.0} color="#eab308" />
 
-          {/* Player 1 3D Floor Target Step Pads */}
+          {/* Cyber Stage Floor & Neon Lanes */}
+          <CyberStageFloor mode={mode} />
+
+          {/* Player 1 3D Target Step Pads (Glowing Cyan Emissive) */}
           {ARROWS.map((arr) => {
             const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset * 0.7 : arr.xOffset;
             return (
-              <group key={`pad_p1_${arr.id}`} position={[xPos, -2.34, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[0.75, 0.75, 0.06]}>
-                  <meshStandardMaterial color="rgba(15,23,42,0.9)" emissive="#00f3ff" emissiveIntensity={0.8} />
+              <group key={`pad_p1_${arr.id}`} position={[xPos, -2.33, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
+                {/* Dark Pad Base */}
+                <Box args={[0.8, 0.8, 0.05]}>
+                  <meshStandardMaterial color="#0f172a" roughness={0.2} />
                 </Box>
-                <Text position={[0, 0, 0.05]} fontSize={0.4} color="#ffffff">
+                {/* Vibrant Glowing Emissive Border Ring */}
+                <Box args={[0.88, 0.88, 0.03]}>
+                  <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={3.0} />
+                </Box>
+                <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff">
                   {arr.arrow}
                 </Text>
               </group>
             );
           })}
 
-          {/* Player 2 3D Floor Target Step Pads (Multiplayer) */}
+          {/* Player 2 3D Target Step Pads (Glowing Gold Emissive) */}
           {mode === 'MULTI' && ARROWS.map((arr) => {
             const xPos = 2.5 + arr.xOffset * 0.7;
             return (
-              <group key={`pad_p2_${arr.id}`} position={[xPos, -2.34, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <Box args={[0.75, 0.75, 0.06]}>
-                  <meshStandardMaterial color="rgba(15,23,42,0.9)" emissive="#eab308" emissiveIntensity={0.8} />
+              <group key={`pad_p2_${arr.id}`} position={[xPos, -2.33, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <Box args={[0.8, 0.8, 0.05]}>
+                  <meshStandardMaterial color="#0f172a" roughness={0.2} />
                 </Box>
-                <Text position={[0, 0, 0.05]} fontSize={0.4} color="#ffffff">
+                <Box args={[0.88, 0.88, 0.03]}>
+                  <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={3.0} />
+                </Box>
+                <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff">
                   {arr.arrow}
                 </Text>
               </group>
             );
           })}
 
-          {/* 3D Floor Flowing Rhythm Arrows */}
+          {/* 3D Flowing Floor Arrows */}
           {floor3DNotes.map((note) => (
             <FloorFlowing3DArrow
               key={note.id}
               arrowData={note.arrow}
               xOffset={note.xOffset}
               zPos={note.z}
+              pColor={note.player === 1 ? '#00f3ff' : '#eab308'}
             />
           ))}
 
@@ -473,7 +538,7 @@ const DanceGame = () => {
             />
           )}
 
-          {/* Player 2 3D Avatar (Multiplayer) */}
+          {/* Player 2 3D Avatar */}
           {p2Landmarks && mode === 'MULTI' && (
             <Rigged3DAvatar
               points={p2Landmarks}
@@ -492,8 +557,8 @@ const DanceGame = () => {
           <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
             &larr; Back to Menu
           </Link>
-          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Floor Flow Dance AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Rhythm arrows flow along the 3D Floor! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Cyber Stage Dance AR</h1>
+          <p style={{ color: '#94a3b8', margin: 0 }}>Vibrant Neon Stage & Flowing Floor Arrows! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -534,9 +599,9 @@ const DanceGame = () => {
           }}>
             {gameState === 'MENU' ? (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Floor Flow Dance AR</h2>
+                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Cyber Stage Dance AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Rhythm arrows slide along the 3D Floor to your 3D Avatar's feet!
+                  Cyberpunk concert stage with vibrant glowing neon floor lanes!
                 </p>
 
                 {/* Avatar Selection Picker */}
@@ -568,7 +633,7 @@ const DanceGame = () => {
                       boxShadow: '0 10px 25px rgba(0,243,255,0.4)'
                     }}
                   >
-                    👤 Single Player 3D Floor
+                    👤 Single Player Stage
                   </button>
 
                   <button
@@ -587,7 +652,7 @@ const DanceGame = () => {
               </>
             ) : (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: '#ec4899', margin: '0 0 10px 0' }}>🎉 Song Complete!</h2>
+                <h2 style={{ fontSize: '2.5rem', color: '#ec4899', margin: '0 0 10px 0' }}>🎉 Dance Complete!</h2>
                 
                 <div style={{ backgroundColor: '#0f172a', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem' }}>
                   <div style={{ color: '#94a3b8', fontSize: '1rem' }}>FINAL SCORE</div>
