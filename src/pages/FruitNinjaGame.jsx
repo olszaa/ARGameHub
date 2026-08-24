@@ -5,13 +5,13 @@ import { Sphere, Cylinder, Box, Text, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 
-// 3D Fruit Types & Visual Definitions
+// 3D Fruit Types & Vivid Visual Definitions
 const FRUIT_TYPES = {
-  watermelon: { name: 'Watermelon', color: '#ef4444', outerColor: '#15803d', score: 10, radius: 0.65 },
-  orange: { name: 'Orange', color: '#f97316', outerColor: '#ea580c', score: 10, radius: 0.5 },
-  apple: { name: 'Apple', color: '#dc2626', outerColor: '#991b1b', score: 10, radius: 0.48 },
-  banana: { name: 'Banana', color: '#eab308', outerColor: '#ca8a04', score: 15, radius: 0.45 },
-  bomb: { name: 'Bomb', color: '#1e293b', outerColor: '#0f172a', isBomb: true, radius: 0.55 }
+  watermelon: { name: 'Watermelon', color: '#ef4444', outerColor: '#16a34a', score: 10, radius: 0.7 },
+  orange: { name: 'Orange', color: '#fb923c', outerColor: '#f97316', score: 10, radius: 0.55 },
+  apple: { name: 'Apple', color: '#f43f5e', outerColor: '#e11d48', score: 10, radius: 0.52 },
+  banana: { name: 'Banana', color: '#facc15', outerColor: '#eab308', score: 15, radius: 0.48 },
+  bomb: { name: 'Bomb', color: '#334155', outerColor: '#1e293b', isBomb: true, radius: 0.6 }
 };
 
 // 3D Whole Floating Fruit Component
@@ -21,17 +21,14 @@ const Fruit3D = ({ typeKey, position, rotation }) => {
   if (info.isBomb) {
     return (
       <group position={position} rotation={rotation}>
-        {/* Dark Metallic Bomb Sphere */}
         <Sphere args={[info.radius, 24, 24]}>
-          <meshStandardMaterial color="#1e293b" metalness={0.9} roughness={0.2} />
+          <meshStandardMaterial color="#1e293b" metalness={0.8} roughness={0.2} />
         </Sphere>
-        {/* Fuse Tube */}
         <Cylinder args={[0.04, 0.04, 0.3, 12]} position={[0, info.radius + 0.1, 0]}>
-          <meshStandardMaterial color="#d97706" />
+          <meshStandardMaterial color="#f59e0b" />
         </Cylinder>
-        {/* Burning Spark Light */}
-        <Sphere args={[0.08, 12, 12]} position={[0, info.radius + 0.25, 0]}>
-          <meshStandardMaterial color="#ef4444" emissive="#f59e0b" emissiveIntensity={5.0} />
+        <Sphere args={[0.1, 12, 12]} position={[0, info.radius + 0.25, 0]}>
+          <meshStandardMaterial color="#ef4444" emissive="#f59e0b" emissiveIntensity={6.0} />
         </Sphere>
       </group>
     );
@@ -39,12 +36,10 @@ const Fruit3D = ({ typeKey, position, rotation }) => {
 
   return (
     <group position={position} rotation={rotation}>
-      {/* Outer Skin Sphere */}
       <Sphere args={[info.radius, 24, 24]}>
-        <meshStandardMaterial color={info.outerColor} roughness={0.3} metalness={0.1} />
+        <meshStandardMaterial color={info.outerColor} roughness={0.2} metalness={0.1} />
       </Sphere>
-      {/* Stem Accent for Apple/Orange */}
-      <Cylinder args={[0.03, 0.03, 0.2, 8]} position={[0, info.radius + 0.05, 0]}>
+      <Cylinder args={[0.04, 0.04, 0.25, 8]} position={[0, info.radius + 0.08, 0]}>
         <meshStandardMaterial color="#78350f" />
       </Cylinder>
     </group>
@@ -57,13 +52,11 @@ const SlicedHalf3D = ({ typeKey, position, rotation, isLeft }) => {
 
   return (
     <group position={position} rotation={rotation}>
-      {/* 3D Hemisphere Cut */}
       <Sphere args={[info.radius, 24, 24, 0, Math.PI]}>
-        <meshStandardMaterial color={info.outerColor} roughness={0.3} />
+        <meshStandardMaterial color={info.outerColor} roughness={0.2} />
       </Sphere>
-      {/* Juicy Inner Face */}
       <Cylinder args={[info.radius, info.radius, 0.02, 24]} rotation={[Math.PI / 2, 0, 0]}>
-        <meshStandardMaterial color={info.color} roughness={0.5} />
+        <meshStandardMaterial color={info.color} roughness={0.3} />
       </Cylinder>
     </group>
   );
@@ -76,8 +69,8 @@ const BladeTrail3D = ({ points, color = '#00f3ff' }) => {
   return (
     <group>
       {points.map((pt, idx) => (
-        <Sphere key={`blade_pt_${idx}`} args={[0.08, 12, 12]} position={pt}>
-          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={4.0} transparent opacity={idx / points.length} />
+        <Sphere key={`blade_pt_${idx}`} args={[0.1, 12, 12]} position={pt}>
+          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={5.0} transparent opacity={idx / points.length} />
         </Sphere>
       ))}
     </group>
@@ -232,15 +225,12 @@ const FruitNinjaGame = () => {
     setGameState('PLAYING');
   };
 
-  // Main 3D Motion Detection & Physics Engine Loop
   const renderGame = () => {
     if (!videoRef.current) return;
 
-    // 1. MediaPipe Pose Hands Tracking
     if (videoRef.current.readyState >= 2 && poseLandmarkerRef.current) {
       const res = poseLandmarkerRef.current.detectForVideo(videoRef.current, performance.now());
       if (res.landmarks && res.landmarks.length > 0) {
-        // Robust X-Pose Exit Check
         const p1Lm = res.landmarks[0];
         if (p1Lm[15] && p1Lm[16] && p1Lm[15].visibility > 0.3 && p1Lm[16].visibility > 0.3) {
           const distNorm = Math.hypot(p1Lm[15].x - p1Lm[16].x, p1Lm[15].y - p1Lm[16].y);
@@ -262,7 +252,6 @@ const FruitNinjaGame = () => {
 
         const sortedPoses = [...res.landmarks].sort((a, b) => (1 - a[0].x) - (1 - b[0].x));
 
-        // Player 1 Hands -> 3D Katana Laser Blades
         if (sortedPoses[0]) {
           const lm = sortedPoses[0];
           const newTrailP1 = [];
@@ -278,7 +267,6 @@ const FruitNinjaGame = () => {
           setBladeTrailsP1([...bladeTrailsRef.current.p1]);
         }
 
-        // Player 2 Hands -> 3D Katana Laser Blades
         if (sortedPoses[1] && modeRef.current === 'MULTI') {
           const lm2 = sortedPoses[1];
           const newTrailP2 = [];
@@ -296,7 +284,6 @@ const FruitNinjaGame = () => {
       }
     }
 
-    // 2. 3D Fruit Launch & Physics Simulation
     if (gameStateRef.current === 'PLAYING') {
       if (Math.random() < 0.045 && fruits3DRef.current.length < 6) {
         const types = ['watermelon', 'orange', 'apple', 'banana', 'bomb'];
@@ -322,7 +309,6 @@ const FruitNinjaGame = () => {
 
       const gravity = 0.005;
 
-      // Update 3D Fruits Position & Handle Slicing Collisions
       fruits3DRef.current.forEach((fruit) => {
         fruit.x += fruit.vx;
         fruit.y += fruit.vy;
@@ -330,7 +316,6 @@ const FruitNinjaGame = () => {
         fruit.rotX += fruit.vRotX;
         fruit.rotY += fruit.vRotY;
 
-        // Check Blade Slicing Collision against 3D Fruit
         let slicedByPlayer = null;
 
         bladeTrailsRef.current.p1.forEach((bPt) => {
@@ -375,7 +360,6 @@ const FruitNinjaGame = () => {
               setScoreP2(scoreP2Ref.current);
             }
 
-            // Spawn 2 Splitting 3D Halves
             halves3DRef.current.push({
               id: Math.random(),
               typeKey: fruit.typeKey,
@@ -396,11 +380,9 @@ const FruitNinjaGame = () => {
         }
       });
 
-      // Filter out off-screen fruits & sliced ones
       fruits3DRef.current = fruits3DRef.current.filter((f) => !f.sliced && f.y > -4.5);
       setFruits3D(fruits3DRef.current.map(f => ({ ...f })));
 
-      // Update 3D Splitting Halves
       halves3DRef.current.forEach((h) => {
         h.x += h.vx;
         h.y += h.vy;
@@ -421,25 +403,36 @@ const FruitNinjaGame = () => {
   }, [status]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', backgroundColor: '#090d16', overflow: 'hidden' }}>
+    <div style={{
+      position: 'relative', width: '100vw', height: '100vh',
+      background: 'linear-gradient(135deg, #fbcfe8 0%, #bae6fd 50%, #fef08a 100%)',
+      overflow: 'hidden'
+    }}>
       
-      <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
+      {/* Live Camera Video Stream Background Overlay */}
+      <video
+        ref={videoRef}
+        style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          objectFit: 'cover', transform: 'scaleX(-1)', opacity: 0.65, zIndex: 0
+        }}
+        playsInline
+        muted
+      />
 
-      {/* 3D Fruit Ninja Arena Canvas */}
+      {/* Bright Vibrant 3D Canvas */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
         <Canvas camera={{ position: [0, 0, 7.5], fov: 55 }}>
-          <ambientLight intensity={0.9} />
-          <pointLight position={[0, 8, 5]} intensity={2.5} color="#ffffff" />
-          <pointLight position={[-6, 4, 2]} intensity={2.0} color="#00f3ff" />
-          <pointLight position={[6, 4, 2]} intensity={2.0} color="#ef4444" />
+          {/* Bright Sunlight & Ambient Lighting */}
+          <ambientLight intensity={2.2} />
+          <directionalLight position={[5, 10, 5]} intensity={3.5} color="#ffffff" />
+          <pointLight position={[-5, 5, 3]} intensity={3.0} color="#f472b6" />
+          <pointLight position={[5, 5, 3]} intensity={3.0} color="#38bdf8" />
 
-          {/* 3D Stage Dojo Backdrop */}
+          {/* Bright Wooden Stage Floor & Dojo Accents */}
           <group position={[0, 0, -5]}>
-            <Box args={[16, 12, 0.5]}>
-              <meshStandardMaterial color="#0f172a" roughness={0.7} />
-            </Box>
             <Box args={[16, 0.2, 8]} position={[0, -4.5, 3]}>
-              <meshStandardMaterial color="#1e293b" metalness={0.5} />
+              <meshStandardMaterial color="#f59e0b" roughness={0.3} metalness={0.1} />
             </Box>
           </group>
 
@@ -478,28 +471,32 @@ const FruitNinjaGame = () => {
           <button
             onClick={handleBackToMain}
             style={{
-              pointerEvents: 'auto', background: 'none', border: 'none', color: '#00d2ff',
+              pointerEvents: 'auto', background: 'none', border: 'none', color: '#0284c7',
               fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', padding: 0
             }}
           >
             &larr; Back to Menu
           </button>
-          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>⚔️ 3D Fruit Ninja AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Slash 3D Fruits with Laser Blade Hands! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <h1 style={{ color: '#0f172a', margin: '5px 0 0 0', fontSize: '2.2rem', textShadow: '0 2px 10px rgba(255,255,255,0.9)' }}>
+            ⚔️ 3D Fruit Ninja AR
+          </h1>
+          <p style={{ color: '#334155', margin: 0, fontWeight: 'bold' }}>
+            Slash 3D Fruits with Laser Blade Hands! | 🙅 Cross Arms X 1.2s to Exit
+          </p>
         </div>
 
         {gameState === 'PLAYING' && (
           <div style={{ display: 'flex', gap: '20px', pointerEvents: 'auto' }}>
-            <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #00f3ff', color: 'white', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', color: '#00f3ff', fontWeight: 'bold' }}>PLAYER 1</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP1}</div>
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #00f3ff', color: '#0f172a', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+              <div style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 'bold' }}>PLAYER 1</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#059669' }}>{scoreP1}</div>
               <div>{'❤️'.repeat(livesP1)}{'🖤'.repeat(3 - livesP1)}</div>
             </div>
 
             {mode === 'MULTI' && (
-              <div style={{ backgroundColor: 'rgba(15,23,42,0.85)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #ec4899', color: 'white', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.85rem', color: '#ec4899', fontWeight: 'bold' }}>PLAYER 2</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP2}</div>
+              <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px 20px', borderRadius: '16px', border: '2px solid #ec4899', color: '#0f172a', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                <div style={{ fontSize: '0.85rem', color: '#db2777', fontWeight: 'bold' }}>PLAYER 2</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#059669' }}>{scoreP2}</div>
                 <div>{'❤️'.repeat(livesP2)}{'🖤'.repeat(3 - livesP2)}</div>
               </div>
             )}
@@ -511,18 +508,18 @@ const FruitNinjaGame = () => {
       {gameState !== 'PLAYING' && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh',
-          backgroundColor: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(10px)',
+          backgroundColor: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(8px)',
           display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 30
         }}>
           <div style={{
-            backgroundColor: '#1e293b', padding: '2.5rem', borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', maxWidth: '520px', width: '90%',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+            backgroundColor: 'rgba(255,255,255,0.95)', padding: '2.5rem', borderRadius: '24px',
+            border: '2px solid #f472b6', textAlign: 'center', maxWidth: '520px', width: '90%',
+            boxShadow: '0 25px 50px -12px rgba(244,114,182,0.4)'
           }}>
             {gameState === 'MENU' ? (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>⚔️ 3D Fruit Ninja AR</h2>
-                <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '2.5rem', color: '#0f172a', margin: '0 0 10px 0' }}>⚔️ 3D Fruit Ninja AR</h2>
+                <p style={{ color: '#475569', fontSize: '1rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>
                   Slash floating 3D fruits in mid-air with laser hand blades! Avoid slicing 💣 bombs!
                 </p>
 
@@ -532,7 +529,7 @@ const FruitNinjaGame = () => {
                     disabled={status !== 'Ready'}
                     style={{
                       padding: '16px 28px', fontSize: '1.2rem', fontWeight: 'bold',
-                      backgroundColor: status === 'Ready' ? '#00f3ff' : '#64748b',
+                      backgroundColor: status === 'Ready' ? '#00f3ff' : '#cbd5e1',
                       color: '#0f172a', border: 'none', borderRadius: '12px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
                       boxShadow: '0 10px 25px rgba(0,243,255,0.4)'
                     }}
@@ -545,7 +542,7 @@ const FruitNinjaGame = () => {
                     disabled={status !== 'Ready'}
                     style={{
                       padding: '16px 28px', fontSize: '1.2rem', fontWeight: 'bold',
-                      backgroundColor: status === 'Ready' ? '#ec4899' : '#64748b',
+                      backgroundColor: status === 'Ready' ? '#ec4899' : '#cbd5e1',
                       color: '#ffffff', border: 'none', borderRadius: '12px', cursor: status === 'Ready' ? 'pointer' : 'not-allowed',
                       boxShadow: '0 10px 25px rgba(236,72,153,0.4)'
                     }}
@@ -558,9 +555,9 @@ const FruitNinjaGame = () => {
               <>
                 <h2 style={{ fontSize: '2.5rem', color: '#ef4444', margin: '0 0 10px 0' }}>💣 Game Over!</h2>
                 
-                <div style={{ backgroundColor: '#0f172a', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem' }}>
-                  <div style={{ color: '#94a3b8', fontSize: '1rem' }}>FINAL SCORE</div>
-                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#10b981' }}>{scoreP1}</div>
+                <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '16px', marginBottom: '2rem', border: '1px solid #e2e8f0' }}>
+                  <div style={{ color: '#64748b', fontSize: '1rem', fontWeight: 'bold' }}>FINAL SCORE</div>
+                  <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#059669' }}>{scoreP1}</div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
