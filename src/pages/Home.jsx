@@ -11,7 +11,8 @@ const MENU_ITEMS = [
   { path: '/fruit-ninja', title: 'Fruit Ninja AR', desc: 'Slash fruits with laser hand blades! Avoid bombs!', class: 'ninja-card', icon: '⚔️' },
   { path: '/lightsaber', title: 'Beat Saber AR', desc: 'Dual Lightsabers & Directional Beat Blocks!', class: 'saber-card', icon: '🤺' },
   { path: '/runner', title: 'Subway Runner AR', desc: 'Lean, Jump 🦘 & Duck 🏃‍♂️ down 3 tracks!', class: 'runner-card', icon: '🏃' },
-  { path: '/wall', title: 'Hole in the Wall', desc: 'Fit body posture into incoming wall cutouts!', class: 'wall-card', icon: '🧱' }
+  { path: '/wall', title: 'Hole in the Wall', desc: 'Fit body posture into incoming wall cutouts!', class: 'wall-card', icon: '🧱' },
+  { path: '/cyber-dodge', title: 'Cyber Stage Dodge', desc: 'Dodge 3D Hologram grid walls & duck high beams!', class: 'cyber-card', icon: '⚡' }
 ];
 
 const Home = () => {

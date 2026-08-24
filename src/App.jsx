@@ -8,6 +8,7 @@ import FruitNinjaGame from './pages/FruitNinjaGame';
 import LightsaberGame from './pages/LightsaberGame';
 import RunnerGame from './pages/RunnerGame';
 import WallGame from './pages/WallGame';
+import CyberDodgeGame from './pages/CyberDodgeGame';
 import './index.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
         <Route path="/lightsaber" element={<LightsaberGame />} />
         <Route path="/runner" element={<RunnerGame />} />
         <Route path="/wall" element={<WallGame />} />
+        <Route path="/cyber-dodge" element={<CyberDodgeGame />} />
       </Routes>
     </Router>
   );
