@@ -134,17 +134,17 @@ const Rigged3DAvatar = ({ points, avatarPreset, positionOffset = [0, 0, 0] }) =>
   );
 };
 
-// 3D Flowing Floor Arrow Component (With vibrant colors & neon borders)
-const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos, pColor }) => {
+// 3D Flowing Floor Arrow Component (Inside semi-transparent lane)
+const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos }) => {
   return (
-    <group position={[xOffset, -2.34, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
-      {/* Dark Base Tile */}
-      <Box args={[0.8, 0.8, 0.06]}>
-        <meshStandardMaterial color="#0f172a" roughness={0.2} />
+    <group position={[xOffset, -2.33, zPos]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Dark Translucent Tile Base */}
+      <Box args={[0.8, 0.8, 0.05]}>
+        <meshStandardMaterial color="#0f172a" transparent opacity={0.8} />
       </Box>
-      {/* Vibrant Neon Emissive Border */}
-      <Box args={[0.85, 0.85, 0.04]}>
-        <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={2.5} />
+      {/* Glowing Neon Border Ring */}
+      <Box args={[0.85, 0.85, 0.03]}>
+        <meshStandardMaterial color={arrowData.color} emissive={arrowData.color} emissiveIntensity={3.0} />
       </Box>
       {/* Arrow Symbol Text */}
       <Text position={[0, 0, 0.05]} fontSize={0.45} color="#ffffff" anchorX="center" anchorY="middle">
@@ -154,59 +154,84 @@ const FloorFlowing3DArrow = ({ arrowData, xOffset, zPos, pColor }) => {
   );
 };
 
-// Cyber Stage Floor Lines & Neon Tracks
-const CyberStageFloor = ({ mode }) => {
+// 4-Lane Perspective Runway with 5 Side Line Dividers & Semi-Transparent Glass Floor
+const RunwayStageFloor = ({ mode }) => {
+  // 5 Divider Line offsets: [-2.4, -1.2, 0.0, 1.2, 2.4]
+  const lineOffsets = [-2.4, -1.2, 0.0, 1.2, 2.4];
+  // 4 Lane Center offsets: [-1.8, -0.6, 0.6, 1.8]
+  const laneCenters = [-1.8, -0.6, 0.6, 1.8];
+
   return (
     <group position={[0, -2.4, -2]}>
-      {/* Main Dark Metallic Stage Floor */}
-      <Box args={[14, 0.1, 14]}>
-        <meshStandardMaterial color="#0b0f19" roughness={0.1} metalness={0.9} />
+      {/* Background Stage Base */}
+      <Box args={[14, 0.05, 14]} position={[0, -0.05, 0]}>
+        <meshStandardMaterial color="#050811" roughness={0.4} />
       </Box>
 
-      {/* Stage Glowing Neon Border Beams */}
-      <Box args={[14.2, 0.15, 0.2]} position={[0, 0.05, 7]}>
-        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={2.5} />
-      </Box>
-      <Box args={[14.2, 0.15, 0.2]} position={[0, 0.05, -7]}>
-        <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={2.5} />
-      </Box>
-      <Box args={[0.2, 0.15, 14]} position={[-7.1, 0.05, 0]}>
-        <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={2.5} />
-      </Box>
-      <Box args={[0.2, 0.15, 14]} position={[7.1, 0.05, 0]}>
-        <meshStandardMaterial color="#eab308" emissive="#eab308" emissiveIntensity={2.5} />
-      </Box>
-
-      {/* Center Divider Line (Multiplayer Split) */}
-      {mode === 'MULTI' && (
-        <Box args={[0.15, 0.12, 14]} position={[0, 0.06, 0]}>
-          <meshStandardMaterial color="#a855f7" emissive="#a855f7" emissiveIntensity={3.0} />
-        </Box>
-      )}
-
-      {/* Glowing Neon Lane Lines (4 Lanes per player) */}
+      {/* SINGLE PLAYER RUNWAY */}
       {mode === 'SINGLE' ? (
-        ARROWS.map((arr) => (
-          <Box key={`lane_single_${arr.id}`} args={[0.06, 0.08, 13.8]} position={[arr.xOffset, 0.06, 0]}>
-            <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={1.8} />
-          </Box>
-        ))
+        <group>
+          {/* 4 Semi-Transparent Glass Lanes (ตรงเลนมีความโปร่งแสง) */}
+          {laneCenters.map((x, idx) => (
+            <Box key={`glass_lane_${idx}`} args={[1.14, 0.04, 13.8]} position={[x, 0.02, 0]}>
+              <meshStandardMaterial
+                color="#0f172a"
+                transparent
+                opacity={0.45}
+                roughness={0.1}
+                metalness={0.8}
+              />
+            </Box>
+          ))}
+
+          {/* 5 Vertical Glowing Cyan Side Divider Lines (เส้นอยู่ด้านข้าง 5 เส้น) */}
+          {lineOffsets.map((x, idx) => (
+            <Box key={`line_divider_${idx}`} args={[0.08, 0.06, 13.8]} position={[x, 0.04, 0]}>
+              <meshStandardMaterial
+                color="#00f3ff"
+                emissive="#00f3ff"
+                emissiveIntensity={3.5}
+              />
+            </Box>
+          ))}
+        </group>
       ) : (
-        <>
-          {/* Player 1 Left Stage Lanes (Cyan) */}
-          {ARROWS.map((arr) => (
-            <Box key={`lane_p1_${arr.id}`} args={[0.06, 0.08, 13.8]} position={[-2.5 + arr.xOffset * 0.7, 0.06, 0]}>
-              <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={1.8} />
-            </Box>
-          ))}
-          {/* Player 2 Right Stage Lanes (Gold) */}
-          {ARROWS.map((arr) => (
-            <Box key={`lane_p2_${arr.id}`} args={[0.06, 0.08, 13.8]} position={[2.5 + arr.xOffset * 0.7, 0.06, 0]}>
-              <meshStandardMaterial color="#eab308" emissive="#eab308" emissiveIntensity={1.8} />
-            </Box>
-          ))}
-        </>
+        /* 2-PLAYER BATTLE TWIN RUNWAYS */
+        <group>
+          {/* Player 1 Left Stage Runway (Cyan Lines & Semi-Transparent Lanes) */}
+          <group position={[-2.5, 0, 0]}>
+            {laneCenters.map((x, idx) => (
+              <Box key={`glass_lane_p1_${idx}`} args={[1.14 * 0.7, 0.04, 13.8]} position={[x * 0.7, 0.02, 0]}>
+                <meshStandardMaterial color="#0f172a" transparent opacity={0.45} roughness={0.1} />
+              </Box>
+            ))}
+            {lineOffsets.map((x, idx) => (
+              <Box key={`line_p1_${idx}`} args={[0.07, 0.06, 13.8]} position={[x * 0.7, 0.04, 0]}>
+                <meshStandardMaterial color="#00f3ff" emissive="#00f3ff" emissiveIntensity={3.5} />
+              </Box>
+            ))}
+          </group>
+
+          {/* Player 2 Right Stage Runway (Gold Lines & Semi-Transparent Lanes) */}
+          <group position={[2.5, 0, 0]}>
+            {laneCenters.map((x, idx) => (
+              <Box key={`glass_lane_p2_${idx}`} args={[1.14 * 0.7, 0.04, 13.8]} position={[x * 0.7, 0.02, 0]}>
+                <meshStandardMaterial color="#0f172a" transparent opacity={0.45} roughness={0.1} />
+              </Box>
+            ))}
+            {lineOffsets.map((x, idx) => (
+              <Box key={`line_p2_${idx}`} args={[0.07, 0.06, 13.8]} position={[x * 0.7, 0.04, 0]}>
+                <meshStandardMaterial color="#eab308" emissive="#eab308" emissiveIntensity={3.5} />
+              </Box>
+            ))}
+          </group>
+        </group>
       )}
+
+      {/* Front Target Line Glow Bar */}
+      <Box args={[14, 0.08, 0.15]} position={[0, 0.05, 3]}>
+        <meshStandardMaterial color="#ec4899" emissive="#ec4899" emissiveIntensity={3.0} />
+      </Box>
     </group>
   );
 };
@@ -477,19 +502,17 @@ const DanceGame = () => {
           <pointLight position={[-8, 5, -2]} intensity={2.0} color="#ec4899" />
           <pointLight position={[8, 5, -2]} intensity={2.0} color="#eab308" />
 
-          {/* Cyber Stage Floor & Neon Lanes */}
-          <CyberStageFloor mode={mode} />
+          {/* Runway Floor with 5 Side Line Dividers & Translucent Glass Lanes */}
+          <RunwayStageFloor mode={mode} />
 
-          {/* Player 1 3D Target Step Pads (Glowing Cyan Emissive) */}
+          {/* Player 1 3D Target Step Pads */}
           {ARROWS.map((arr) => {
             const xPos = mode === 'MULTI' ? -2.5 + arr.xOffset * 0.7 : arr.xOffset;
             return (
               <group key={`pad_p1_${arr.id}`} position={[xPos, -2.33, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
-                {/* Dark Pad Base */}
                 <Box args={[0.8, 0.8, 0.05]}>
                   <meshStandardMaterial color="#0f172a" roughness={0.2} />
                 </Box>
-                {/* Vibrant Glowing Emissive Border Ring */}
                 <Box args={[0.88, 0.88, 0.03]}>
                   <meshStandardMaterial color={arr.color} emissive={arr.color} emissiveIntensity={3.0} />
                 </Box>
@@ -500,7 +523,7 @@ const DanceGame = () => {
             );
           })}
 
-          {/* Player 2 3D Target Step Pads (Glowing Gold Emissive) */}
+          {/* Player 2 3D Target Step Pads */}
           {mode === 'MULTI' && ARROWS.map((arr) => {
             const xPos = 2.5 + arr.xOffset * 0.7;
             return (
@@ -518,14 +541,13 @@ const DanceGame = () => {
             );
           })}
 
-          {/* 3D Flowing Floor Arrows */}
+          {/* 3D Flowing Floor Arrows inside Translucent Lanes */}
           {floor3DNotes.map((note) => (
             <FloorFlowing3DArrow
               key={note.id}
               arrowData={note.arrow}
               xOffset={note.xOffset}
               zPos={note.z}
-              pColor={note.player === 1 ? '#00f3ff' : '#eab308'}
             />
           ))}
 
@@ -557,8 +579,8 @@ const DanceGame = () => {
           <Link to="/" style={{ pointerEvents: 'auto', color: '#00d2ff', textDecoration: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>
             &larr; Back to Menu
           </Link>
-          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Cyber Stage Dance AR</h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Vibrant Neon Stage & Flowing Floor Arrows! | 🙅 Cross Arms X 1.2s to Exit</p>
+          <h1 style={{ color: 'white', margin: '5px 0 0 0', fontSize: '2.2rem' }}>💃 3D Glass Runway Dance AR</h1>
+          <p style={{ color: '#94a3b8', margin: 0 }}>4 Translucent Glass Lanes & 5 Neon Divider Lines! | 🙅 Cross Arms X 1.2s to Exit</p>
         </div>
 
         {gameState === 'PLAYING' && (
@@ -599,9 +621,9 @@ const DanceGame = () => {
           }}>
             {gameState === 'MENU' ? (
               <>
-                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Cyber Stage Dance AR</h2>
+                <h2 style={{ fontSize: '2.5rem', color: 'white', margin: '0 0 10px 0' }}>💃 3D Glass Runway Dance AR</h2>
                 <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                  Cyberpunk concert stage with vibrant glowing neon floor lanes!
+                  4 Translucent Glass Lanes with 5 Glowing Neon Side Divider Lines!
                 </p>
 
                 {/* Avatar Selection Picker */}
